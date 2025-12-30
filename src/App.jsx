@@ -57,151 +57,6 @@ const formatMKD = (amount) => {
   return new Intl.NumberFormat('mk-MK').format(amount) + ' ден.';
 };
 
-// Admin Panel Component
-const AdminPanel = ({ applications, onBack }) => {
-  const [filter, setFilter] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-
-  const filteredApplications = applications.filter(app => {
-    if (filter !== 'all' && app.institutionId !== parseInt(filter)) return false;
-    if (dateFrom && new Date(app.date) < new Date(dateFrom)) return false;
-    if (dateTo && new Date(app.date) > new Date(dateTo + 'T23:59:59')) return false;
-    return true;
-  });
-
-  const stats = financialInstitutions.map(inst => {
-    const count = filteredApplications.filter(app => app.institutionId === inst.id).length;
-    return {
-      ...inst,
-      count,
-      revenue: count * 100
-    };
-  }).filter(s => s.count > 0);
-
-  const totalRevenue = stats.reduce((sum, s) => sum + s.revenue, 0);
-
-  const exportData = () => {
-    let csv = 'Институција,Број на апликации,Приход (ден.)\n';
-    stats.forEach(s => {
-      csv += `${s.name},${s.count},${s.revenue}\n`;
-    });
-    csv += `\nВКУПНО,${filteredApplications.length},${totalRevenue}\n`;
-    
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `kikocredit-izvestaj-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
-  return (
-    <div style={adminStyles.container}>
-      <header style={adminStyles.header}>
-        <button onClick={onBack} style={adminStyles.backButton}>← Назад</button>
-        <h1 style={adminStyles.title}>🦊 KikoCredit Админ</h1>
-      </header>
-
-      {/* Stats Cards */}
-      <div style={adminStyles.statsGrid}>
-        <div style={adminStyles.statCard}>
-          <span style={adminStyles.statNumber}>{filteredApplications.length}</span>
-          <span style={adminStyles.statLabel}>Апликации</span>
-        </div>
-        <div style={adminStyles.statCardHighlight}>
-          <span style={adminStyles.statNumber}>{formatMKD(totalRevenue)}</span>
-          <span style={adminStyles.statLabel}>Приход</span>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div style={adminStyles.filterSection}>
-        <h3 style={adminStyles.filterTitle}>Филтри</h3>
-        
-        <select 
-          value={filter} 
-          onChange={(e) => setFilter(e.target.value)}
-          style={adminStyles.select}
-        >
-          <option value="all">Сите институции</option>
-          {financialInstitutions.map(inst => (
-            <option key={inst.id} value={inst.id}>{inst.name}</option>
-          ))}
-        </select>
-
-        <div style={adminStyles.dateFilters}>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            style={adminStyles.dateInput}
-          />
-          <span style={{color: 'white'}}>до</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            style={adminStyles.dateInput}
-          />
-        </div>
-      </div>
-
-      {/* Stats by Institution */}
-      <div style={adminStyles.section}>
-        <div style={adminStyles.sectionHeader}>
-          <h3 style={adminStyles.sectionTitle}>Апликации по институција</h3>
-          <button onClick={exportData} style={adminStyles.exportButton}>
-            📥 Експорт CSV
-          </button>
-        </div>
-        
-        {stats.length === 0 ? (
-          <p style={adminStyles.noData}>Нема апликации за избраниот период</p>
-        ) : (
-          stats.map(s => (
-            <div key={s.id} style={adminStyles.institutionRow}>
-              <div style={adminStyles.institutionInfo}>
-                <span style={adminStyles.institutionLogo}>{s.logo}</span>
-                <span style={adminStyles.institutionName}>{s.name}</span>
-              </div>
-              <div style={adminStyles.institutionStats}>
-                <span style={adminStyles.countBadge}>{s.count} апл.</span>
-                <span style={adminStyles.revenueBadge}>{formatMKD(s.revenue)}</span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Applications List */}
-      <div style={adminStyles.section}>
-        <h3 style={adminStyles.sectionTitle}>Листа на апликации</h3>
-        
-        {filteredApplications.length === 0 ? (
-          <p style={adminStyles.noData}>Нема апликации</p>
-        ) : (
-          filteredApplications.slice().reverse().map(app => (
-            <div key={app.id} style={adminStyles.applicationCard}>
-              <div style={adminStyles.appHeader}>
-                <span style={adminStyles.appInstitution}>{app.institution}</span>
-                <span style={adminStyles.appDate}>
-                  {new Date(app.date).toLocaleDateString('mk-MK')} {new Date(app.date).toLocaleTimeString('mk-MK', {hour: '2-digit', minute: '2-digit'})}
-                </span>
-              </div>
-              <div style={adminStyles.appDetails}>
-                <p><strong>👤</strong> {app.customer.firstName} {app.customer.lastName}</p>
-                <p><strong>📞</strong> {app.customer.phone}</p>
-                <p><strong>💰</strong> {formatMKD(app.amount)} • {app.months} рати</p>
-                <p><strong>💵</strong> Примања: {app.customer.salary}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
-
 const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
   const [step, setStep] = useState(1);
   const [amount, setAmount] = useState('');
@@ -269,46 +124,16 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
       monthlyPayment: parseFloat(monthlyPayment),
       institution: selectedOffer.name,
       institutionId: selectedOffer.id,
-      institutionEmail: selectedOffer.email,
       months: selectedOffer.months,
       totalInterest: selectedOffer.totalInterest,
-      totalPayment: selectedOffer.totalPayment,
       status: 'Испратена'
     };
 
     sendEmailToInstitution(application, selectedOffer);
-    sendToGoogleSheets(application, selectedOffer);
     
     onSubmitApplication(application);
     setSubmitted(true);
     setStep(4);
-  };
-
-  const sendToGoogleSheets = async (application, offer) => {
-    const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycby2PNuRnoVSAhjJl5uPDKaYo9jqnXgxO2mJ-JgRNOyuaTmTnh--MBSCeDFiAYx80VecUg/exec';
-    
-    try {
-      await fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: application.customer.firstName,
-          lastName: application.customer.lastName,
-          phone: application.customer.phone,
-          salary: application.customer.salary,
-          amount: application.amount,
-          monthlyPayment: application.monthlyPayment,
-          institution: offer.name,
-          institutionEmail: offer.email
-        })
-      });
-      console.log('✅ Data sent to Google Sheets');
-    } catch (error) {
-      console.error('❌ Google Sheets error:', error);
-    }
   };
 
   const sendEmailToInstitution = async (application, offer) => {
@@ -607,48 +432,32 @@ export default function KikoApp() {
   const [applications, setApplications] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('kikocredit_applications');
+    const saved = localStorage.getItem('kiko_applications');
     if (saved) {
       setApplications(JSON.parse(saved));
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('kikocredit_applications', JSON.stringify(applications));
+    localStorage.setItem('kiko_applications', JSON.stringify(applications));
   }, [applications]);
 
   const handleSubmitApplication = (application) => {
     setApplications([...applications, application]);
     console.log('📧 Email sent to:', application.institution);
-  };
-
-  const handleAdminClick = () => {
-    const password = prompt('🔐 Внеси лозинка за админ пристап:');
-    if (password === 'Overath2810') {
-      setView('admin');
-    } else if (password !== null) {
-      alert('❌ Погрешна лозинка!');
-    }
+    console.log('Application data:', application);
   };
 
   return (
     <div style={styles.app}>
-      {view === 'customer' ? (
-        <CustomerView 
-          onSubmitApplication={handleSubmitApplication}
-          onAdminClick={handleAdminClick}
-        />
-      ) : (
-        <AdminPanel 
-          applications={applications}
-          onBack={() => setView('customer')}
-        />
-      )}
+      <CustomerView 
+        onSubmitApplication={handleSubmitApplication}
+        onAdminClick={() => {}}
+      />
     </div>
   );
 }
 
-// Customer styles
 const styles = {
   app: {
     fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
@@ -976,194 +785,5 @@ const styles = {
     padding: '20px',
     color: 'rgba(255,255,255,0.6)',
     fontSize: '12px',
-  },
-};
-
-// Admin styles
-const adminStyles = {
-  container: {
-    maxWidth: '600px',
-    margin: '0 auto',
-    padding: '20px',
-    minHeight: '100vh',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  backButton: {
-    background: 'rgba(255,255,255,0.2)',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 16px',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  title: {
-    color: 'white',
-    fontSize: '24px',
-    fontWeight: '700',
-    margin: 0,
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  statCard: {
-    background: 'white',
-    borderRadius: '16px',
-    padding: '20px',
-    textAlign: 'center',
-  },
-  statCardHighlight: {
-    background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-    borderRadius: '16px',
-    padding: '20px',
-    textAlign: 'center',
-    color: 'white',
-  },
-  statNumber: {
-    display: 'block',
-    fontSize: '28px',
-    fontWeight: '800',
-  },
-  statLabel: {
-    display: 'block',
-    fontSize: '12px',
-    opacity: 0.8,
-    marginTop: '4px',
-  },
-  filterSection: {
-    background: 'rgba(255,255,255,0.1)',
-    borderRadius: '16px',
-    padding: '16px',
-    marginBottom: '24px',
-  },
-  filterTitle: {
-    color: 'white',
-    fontSize: '14px',
-    fontWeight: '600',
-    marginBottom: '12px',
-    marginTop: 0,
-  },
-  select: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '14px',
-    borderRadius: '8px',
-    border: 'none',
-    marginBottom: '12px',
-  },
-  dateFilters: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-  },
-  dateInput: {
-    flex: 1,
-    padding: '10px',
-    fontSize: '14px',
-    borderRadius: '8px',
-    border: 'none',
-  },
-  section: {
-    background: 'white',
-    borderRadius: '16px',
-    padding: '20px',
-    marginBottom: '16px',
-  },
-  sectionHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px',
-  },
-  sectionTitle: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#333',
-    margin: 0,
-  },
-  exportButton: {
-    background: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '8px 12px',
-    fontSize: '12px',
-    cursor: 'pointer',
-  },
-  noData: {
-    textAlign: 'center',
-    color: '#999',
-    padding: '20px',
-  },
-  institutionRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 0',
-    borderBottom: '1px solid #eee',
-  },
-  institutionInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  institutionLogo: {
-    fontSize: '24px',
-  },
-  institutionName: {
-    fontSize: '14px',
-    fontWeight: '600',
-  },
-  institutionStats: {
-    display: 'flex',
-    gap: '8px',
-  },
-  countBadge: {
-    background: '#e3f2fd',
-    color: '#1976d2',
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
-  },
-  revenueBadge: {
-    background: '#e8f5e9',
-    color: '#2e7d32',
-    padding: '4px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
-  },
-  applicationCard: {
-    background: '#f9f9f9',
-    borderRadius: '12px',
-    padding: '16px',
-    marginBottom: '12px',
-  },
-  appHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '12px',
-  },
-  appInstitution: {
-    fontWeight: '700',
-    color: '#333',
-  },
-  appDate: {
-    fontSize: '12px',
-    color: '#888',
-  },
-  appDetails: {
-    fontSize: '14px',
-    color: '#555',
   },
 };
