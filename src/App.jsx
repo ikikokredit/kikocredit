@@ -277,10 +277,38 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
     };
 
     sendEmailToInstitution(application, selectedOffer);
+    sendToGoogleSheets(application, selectedOffer);
     
     onSubmitApplication(application);
     setSubmitted(true);
     setStep(4);
+  };
+
+  const sendToGoogleSheets = async (application, offer) => {
+    const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycby2PNuRnoVSAhjJl5uPDKaYo9jqnXgxO2mJ-JgRNOyuaTmTnh--MBSCeDFiAYx80VecUg/exec';
+    
+    try {
+      await fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: application.customer.firstName,
+          lastName: application.customer.lastName,
+          phone: application.customer.phone,
+          salary: application.customer.salary,
+          amount: application.amount,
+          monthlyPayment: application.monthlyPayment,
+          institution: offer.name,
+          institutionEmail: offer.email
+        })
+      });
+      console.log('✅ Data sent to Google Sheets');
+    } catch (error) {
+      console.error('❌ Google Sheets error:', error);
+    }
   };
 
   const sendEmailToInstitution = async (application, offer) => {
