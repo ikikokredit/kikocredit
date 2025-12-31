@@ -16,7 +16,7 @@ const financialInstitutions = [
   { id: 12, name: 'SmartKredit', svt: 60.0, interestRate: 9.0, logo: '🧠', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'info@smartkredit.mk', phone: '071299288', website: 'smartkredit.mk' },
   { id: 13, name: 'М Кеш', svt: 65.8, interestRate: 12.0, logo: '💵', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'office@mcash.mk', phone: '025115000', website: 'mcash.mk' },
   { id: 14, name: 'Credissimo', svt: 66.75, interestRate: 9.0, logo: '🎯', type: 'finance', maxAmount: 30000, maxMonths: 6, email: 'support@credissimo.mk', phone: '15020', website: 'credissimo.mk' },
-  { id: 15, name: 'XtraCredit', svt: 66.75, interestRate: 9.0, logo: '✖️', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'support@xtracredit.mk', phone: '13114', website: 'xtracredit.mk' },
+  { id: 15, name: 'XtraCredit', svt: 66.75, interestRate: 9.0, logo: '✖️', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'p.dimitrovski@gmail.com', phone: '13114', website: 'xtracredit.mk' },
   { id: 16, name: 'Easy Finance', svt: 69.6, interestRate: 0.0, logo: '⚡', type: 'finance', maxAmount: 50000, maxMonths: 12, email: 'info@easyfinance.mk', phone: '', website: 'easyfinance.mk' },
 ];
 
