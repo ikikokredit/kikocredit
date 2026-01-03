@@ -8,15 +8,15 @@ const financialInstitutions = [
   { id: 4, name: 'Минт СН', svt: 45.0, interestRate: 9.0, logo: '🌿', type: 'finance', maxAmount: 300000, maxMonths: 30, email: 'info@krediti.com.mk', phone: '15007', website: 'krediti.com.mk' },
   { id: 5, name: 'One Finance', svt: 48.0, interestRate: 9.0, logo: '1️⃣', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@onefinance.mk', phone: '', website: 'onefinance.mk' },
   { id: 6, name: 'Монимакс (brzkredit)', svt: 50.0, interestRate: 10.0, logo: '💰', type: 'finance', maxAmount: 250000, maxMonths: 30, email: 'info@brzkredit.com', phone: '', website: 'brzkredit.com' },
-  { id: 7, name: 'Мој Кредит', svt: 52.0, interestRate: 9.0, logo: '🏠', type: 'finance', maxAmount: 250000, maxMonths: 120, email: 'info@mojkredit.mk', phone: '', website: 'mojkredit.mk' },
+  { id: 7, name: 'Мој Кредит', svt: 52.0, interestRate: 9.0, logo: '🏠', type: 'finance', maxAmount: 250000, maxMonths: 120, email: 'p.dimitrovski@gmail.com', phone: '', website: 'mojkredit.mk' },
   { id: 8, name: 'Кредо Кард', svt: 54.0, interestRate: 9.0, logo: '💳', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'fdkredokard@gmail.com', phone: '023243003', website: 'kredo.mk' },
   { id: 9, name: 'FlexCredit', svt: 55.0, interestRate: 9.0, logo: '🔄', type: 'finance', maxAmount: 150000, maxMonths: 24, email: 'info@flexcredit.mk', phone: '13505', website: 'flexcredit.mk' },
-  { id: 10, name: 'CrediYES', svt: 56.0, interestRate: 9.0, logo: '✅', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@crediyes.mk', phone: '026147444', website: 'crediyes.mk' },
+  { id: 10, name: 'CrediYES', svt: 56.0, interestRate: 9.0, logo: '✅', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@credi-yes.com', phone: '026147444', website: 'crediyes.mk' },
   { id: 11, name: 'FixCredit', svt: 58.0, interestRate: 0.0, logo: '🔧', type: 'finance', maxAmount: 150000, maxMonths: 24, email: 'info@fixcredit.mk', phone: '044521005', website: 'fixcredit.mk' },
   { id: 12, name: 'SmartKredit', svt: 60.0, interestRate: 9.0, logo: '🧠', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'info@smartkredit.mk', phone: '071299288', website: 'smartkredit.mk' },
   { id: 13, name: 'М Кеш', svt: 65.8, interestRate: 12.0, logo: '💵', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'office@mcash.mk', phone: '025115000', website: 'mcash.mk' },
   { id: 14, name: 'Credissimo', svt: 66.75, interestRate: 9.0, logo: '🎯', type: 'finance', maxAmount: 30000, maxMonths: 6, email: 'support@credissimo.mk', phone: '15020', website: 'credissimo.mk' },
-  { id: 15, name: 'XtraCredit', svt: 66.75, interestRate: 9.0, logo: '✖️', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'p.dimitrovski@gmail.com', phone: '13114', website: 'xtracredit.mk' },
+  { id: 15, name: 'XtraCredit', svt: 66.75, interestRate: 9.0, logo: '✖️', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'support@xtracredit.mk', phone: '13114', website: 'xtracredit.mk' },
   { id: 16, name: 'Easy Finance', svt: 69.6, interestRate: 0.0, logo: '⚡', type: 'finance', maxAmount: 50000, maxMonths: 12, email: 'info@easyfinance.mk', phone: '', website: 'easyfinance.mk' },
 ];
 
