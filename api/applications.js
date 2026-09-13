@@ -66,7 +66,12 @@ async function ensureTable(db) {
 function isAuthorized(req) {
   const expected = process.env.ADMIN_PASSWORD || '';
   const header = req.headers['authorization'] || '';
-  const given = header.startsWith('Bearer ') ? header.slice(7) : '';
+  let given = header.startsWith('Bearer ') ? header.slice(7) : '';
+  // Клиентот ја праќа лозинката base64-кодирана (HTTP заглавијата не трпат
+  // кирилица и други не-ISO-8859-1 знаци). Стариот, нешифриран облик исто се прифаќа.
+  if (given.startsWith('b64:')) {
+    try { given = Buffer.from(given.slice(4), 'base64').toString('utf8'); } catch { given = ''; }
+  }
   if (!expected || !given) return false;
   const a = Buffer.from(given, 'utf8');
   const b = Buffer.from(expected, 'utf8');

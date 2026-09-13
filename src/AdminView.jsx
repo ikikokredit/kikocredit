@@ -15,8 +15,18 @@ const formatDate = (iso) => {
   return isNaN(d) ? '' : d.toLocaleString('mk-MK', { dateStyle: 'short', timeStyle: 'short' });
 };
 
+// HTTP заглавијата дозволуваат само ISO-8859-1, па лозинка со кирилица би го
+// скршила повикот уште во прелистувачот. Затоа секогаш ја праќаме base64-кодирана.
+const encodeToken = (pw) => {
+  const bytes = new TextEncoder().encode(pw);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return 'b64:' + btoa(bin);
+};
+
 export default function AdminView({ onClose, endpoint }) {
-  const [token, setToken] = useState(() => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } });
+  const [token, setToken] = useState('');
+  const [checking, setChecking] = useState(() => { try { return !!sessionStorage.getItem(TOKEN_KEY); } catch { return false; } });
   const [password, setPassword] = useState('');
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,38 +34,64 @@ export default function AdminView({ onClose, endpoint }) {
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const authHeaders = (t = token) => ({ Authorization: `Bearer ${t}` });
+  const authHeaders = (t = token) => ({ Authorization: `Bearer ${encodeToken(t)}` });
 
-  const load = async (t = token) => {
-    if (!t) return;
-    setLoading(true); setError('');
+  const forget = () => { try { sessionStorage.removeItem(TOKEN_KEY); } catch {} setToken(''); setRows([]); };
+
+  // Проверува лозинка кај серверот; враќа true само при успех.
+  const verify = async (t) => {
     try {
       const res = await fetch(endpoint, { headers: authHeaders(t) });
-      if (res.status === 401) { setError('Погрешна лозинка.'); setToken(''); try { sessionStorage.removeItem(TOKEN_KEY); } catch {} return; }
-      if (res.status === 503) { setError('Базата не е поставена (DATABASE_URL на Vercel).'); return; }
-      if (!res.ok) { setError(`Грешка ${res.status}`); return; }
+      if (res.status === 401) { setError('Погрешна лозинка.'); return false; }
+      if (res.status === 503) { setError('Базата не е поставена (DATABASE_URL на Vercel).'); return false; }
+      if (!res.ok) { setError(`Грешка ${res.status}`); return false; }
       const data = await res.json();
       setRows(data.applications || []);
+      setError('');
+      return true;
     } catch (e) {
       setError('Серверот не одговара.');
-    } finally {
-      setLoading(false);
+      return false;
     }
   };
 
-  useEffect(() => { if (token) load(token); /* eslint-disable-line */ }, []);
+  // Освежување ВНАТРЕ во панелот — не те исфрла при моментален прекин на мрежата.
+  const load = async (t = token) => {
+    if (!t) return;
+    setLoading(true);
+    const ok = await verify(t);
+    if (!ok) { /* пораката ја постави verify */ }
+    setLoading(false);
+  };
+
+  // При отворање: ако има зачувана лозинка, прво ја проверуваме кај серверот.
+  useEffect(() => {
+    let saved = '';
+    try { saved = sessionStorage.getItem(TOKEN_KEY) || ''; } catch {}
+    if (!saved) { setChecking(false); return; }
+    (async () => {
+      const ok = await verify(saved);
+      if (ok) setToken(saved); else forget();
+      setChecking(false);
+    })();
+    /* eslint-disable-next-line */
+  }, []);
 
   const login = async (e) => {
     e.preventDefault();
     const t = password.trim();
-    if (!t) return;
-    try { sessionStorage.setItem(TOKEN_KEY, t); } catch {}
-    setToken(t);
-    setPassword('');
-    await load(t);
+    if (!t || loading) return;
+    setLoading(true); setError('');
+    const ok = await verify(t);           // панелот се отвора САМО ако серверот потврди
+    if (ok) {
+      try { sessionStorage.setItem(TOKEN_KEY, t); } catch {}
+      setToken(t);
+      setPassword('');
+    }
+    setLoading(false);
   };
 
-  const logout = () => { try { sessionStorage.removeItem(TOKEN_KEY); } catch {} setToken(''); setRows([]); };
+  const logout = () => forget();
 
   const updateStatus = async (id, status) => {
     const prev = rows;
@@ -112,13 +148,17 @@ export default function AdminView({ onClose, endpoint }) {
         <button onClick={onClose} style={s.closeBtn} title="Назад кон сајтот">✕</button>
       </header>
 
-      {!token ? (
+      {checking ? (
+        <div style={s.card}><p style={{ margin: 0, textAlign: 'center', color: '#666' }}>Се проверува…</p></div>
+      ) : !token ? (
         <form onSubmit={login} style={s.card}>
           <h2 style={s.cardTitle}>Најава</h2>
           <label style={s.label}>Лозинка</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={s.input} autoFocus autoComplete="current-password" />
           {error && <p style={s.error}>{error}</p>}
-          <button type="submit" style={s.primaryBtn}>Влези 🔐</button>
+          <button type="submit" disabled={loading} style={{ ...s.primaryBtn, opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Се проверува…' : 'Влези 🔐'}
+          </button>
         </form>
       ) : (
         <>
