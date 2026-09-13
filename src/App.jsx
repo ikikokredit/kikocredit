@@ -1,24 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { activeInstitutions, DATA_UPDATED_LABEL } from './institutions.js';
+import AdminView from './AdminView.jsx';
 
-// Financial institutions data - December 2025
-const financialInstitutions = [
-  { id: 1, name: 'Иуте Кредит', svt: 34.5, interestRate: 2.9, logo: '⚡', type: 'finance', maxAmount: 600000, maxMonths: 60, email: 'info@iutecredit.mk', phone: '13333', website: 'iute.mk' },
-  { id: 2, name: 'Тиго Фајнанс', svt: 38.0, interestRate: 3.5, logo: '🐯', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'info@tigo.mk', phone: '13700', website: 'tigo.mk' },
-  { id: 3, name: 'Солидус', svt: 40.0, interestRate: 9.0, logo: '🔷', type: 'finance', maxAmount: 300000, maxMonths: 36, email: 'info@solidus.mk', phone: '', website: 'solidus.mk' },
-  { id: 4, name: 'Минт СН', svt: 45.0, interestRate: 9.0, logo: '🌿', type: 'finance', maxAmount: 300000, maxMonths: 30, email: 'info@krediti.com.mk', phone: '15007', website: 'krediti.com.mk' },
-  { id: 5, name: 'One Finance', svt: 48.0, interestRate: 9.0, logo: '1️⃣', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@onefinance.mk', phone: '', website: 'onefinance.mk' },
-  { id: 6, name: 'Монимакс (brzkredit)', svt: 50.0, interestRate: 10.0, logo: '💰', type: 'finance', maxAmount: 250000, maxMonths: 30, email: 'info@brzkredit.com', phone: '', website: 'brzkredit.com' },
-  { id: 7, name: 'Мој Кредит', svt: 52.0, interestRate: 9.0, logo: '🏠', type: 'finance', maxAmount: 250000, maxMonths: 120, email: 'p.dimitrovski@gmail.com', phone: '', website: 'mojkredit.mk' },
-  { id: 8, name: 'Кредо Кард', svt: 54.0, interestRate: 9.0, logo: '💳', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'fdkredokard@gmail.com', phone: '023243003', website: 'kredo.mk' },
-  { id: 9, name: 'FlexCredit', svt: 55.0, interestRate: 9.0, logo: '🔄', type: 'finance', maxAmount: 150000, maxMonths: 24, email: 'info@flexcredit.mk', phone: '13505', website: 'flexcredit.mk' },
-  { id: 10, name: 'CrediYES', svt: 56.0, interestRate: 9.0, logo: '✅', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@credi-yes.com', phone: '026147444', website: 'crediyes.mk' },
-  { id: 11, name: 'FixCredit', svt: 58.0, interestRate: 0.0, logo: '🔧', type: 'finance', maxAmount: 150000, maxMonths: 24, email: 'info@fixcredit.mk', phone: '044521005', website: 'fixcredit.mk' },
-  { id: 12, name: 'SmartKredit', svt: 60.0, interestRate: 9.0, logo: '🧠', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'info@smartkredit.mk', phone: '071299288', website: 'smartkredit.mk' },
-  { id: 13, name: 'М Кеш', svt: 65.8, interestRate: 12.0, logo: '💵', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'office@mcash.mk', phone: '025115000', website: 'mcash.mk' },
-  { id: 14, name: 'Credissimo', svt: 66.75, interestRate: 9.0, logo: '🎯', type: 'finance', maxAmount: 30000, maxMonths: 6, email: 'support@credissimo.mk', phone: '15020', website: 'credissimo.mk' },
-  { id: 15, name: 'XtraCredit', svt: 66.75, interestRate: 9.0, logo: '✖️', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'support@xtracredit.mk', phone: '13114', website: 'xtracredit.mk' },
-  { id: 16, name: 'Easy Finance', svt: 69.6, interestRate: 0.0, logo: '⚡', type: 'finance', maxAmount: 50000, maxMonths: 12, email: 'info@easyfinance.mk', phone: '', website: 'easyfinance.mk' },
-];
+// Податоците за друштвата живеат во src/institutions.js (единствен извор).
+const financialInstitutions = activeInstitutions;
+
+// Апликациите се зачувуваат на серверот (api/applications.js → Postgres).
+const APPLICATIONS_ENDPOINT = '/api/applications';
 
 const calculateLoan = (amount, monthlyPayment, svt) => {
   const monthlyRate = svt / 100 / 12;
@@ -83,7 +71,8 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
     const calculatedResults = financialInstitutions
       .map(inst => {
         if (amt > inst.maxAmount) return null;
-        
+        if (inst.minAmount && amt < inst.minAmount) return null;
+
         const loanDetails = calculateLoan(amt, payment, inst.svt);
         if (!loanDetails) return null;
         if (loanDetails.months > inst.maxMonths) return null;
@@ -110,11 +99,15 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
     setStep(3);
   };
 
-  const handleSubmit = () => {
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async () => {
     if (!customerData.firstName || !customerData.lastName || !customerData.phone || !customerData.salary) {
       alert('Ве молиме пополнете ги сите полиња');
       return;
     }
+    if (sending) return;
+    setSending(true);
 
     const application = {
       id: Date.now(),
@@ -126,14 +119,51 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
       institutionId: selectedOffer.id,
       months: selectedOffer.months,
       totalInterest: selectedOffer.totalInterest,
-      status: 'Испратена'
+      totalPayment: selectedOffer.totalPayment,
+      status: 'Нова'
     };
 
-    sendEmailToInstitution(application, selectedOffer);
-    
-    onSubmitApplication(application);
+    // 1) Зачувај на серверот (контролен панел). Ако серверот не одговори,
+    //    корисникот сепак добива потврда — барањето оди и по e-mail.
+    const saved = await saveApplication(application);
+    // 2) E-mail до друштвото (постоечки EmailJS шаблон), само ако има адреса.
+    if (selectedOffer.email) sendEmailToInstitution(application, selectedOffer);
+
+    onSubmitApplication({ ...application, saved });
     setSubmitted(true);
+    setSending(false);
     setStep(4);
+  };
+
+  const saveApplication = async (application) => {
+    try {
+      const res = await fetch(APPLICATIONS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: application.customer.firstName,
+          lastName: application.customer.lastName,
+          phone: application.customer.phone,
+          salary: application.customer.salary,
+          amount: application.amount,
+          monthlyPayment: application.monthlyPayment,
+          months: application.months,
+          totalInterest: application.totalInterest,
+          totalPayment: application.totalPayment,
+          institutionId: application.institutionId,
+          institutionName: application.institution,
+          website: '' // honeypot — луѓето го оставаат празно
+        })
+      });
+      if (!res.ok) {
+        console.error('❌ Зачувување неуспешно:', res.status, await res.text().catch(() => ''));
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('❌ Зачувување неуспешно:', e);
+      return false;
+    }
   };
 
   const sendEmailToInstitution = async (application, offer) => {
@@ -261,7 +291,7 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
             <p style={styles.disclaimerText}>
               Понудите се подредени по <strong>најнизок вкупен трошок</strong>.
               Конечните услови се договараат директно со институцијата.
-              <br/><small style={{opacity: 0.7}}>Ажурирано: Декември 2025</small>
+              <br/><small style={{opacity: 0.7}}>Ажурирано: {DATA_UPDATED_LABEL}</small>
             </p>
           </div>
 
@@ -382,8 +412,8 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
             </select>
           </div>
 
-          <button onClick={handleSubmit} style={styles.primaryButton}>
-            Испрати барање ✉️
+          <button onClick={handleSubmit} disabled={sending} style={{...styles.primaryButton, opacity: sending ? 0.7 : 1}}>
+            {sending ? 'Се испраќа…' : 'Испрати барање ✉️'}
           </button>
 
           <button onClick={() => setStep(2)} style={styles.backButton}>
@@ -421,39 +451,41 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
       )}
 
       <footer style={styles.footer}>
-        <p>© 2025 KikoCredit.com - Твој кредитен советник</p>
+        <p>© {new Date().getFullYear()} KikoCredit.com - Твој кредитен советник</p>
       </footer>
     </div>
   );
 };
 
 export default function KikoApp() {
-  const [view, setView] = useState('customer');
-  const [applications, setApplications] = useState([]);
+  // ⚙️ или директен линк kikocredit.com/#admin го отвора контролниот панел
+  const [view, setView] = useState(() => (window.location.hash === '#admin' ? 'admin' : 'customer'));
 
   useEffect(() => {
-    const saved = localStorage.getItem('kiko_applications');
-    if (saved) {
-      setApplications(JSON.parse(saved));
-    }
+    const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'customer');
+    window.addEventListener('hashchange', onHash);
+    // Стари верзии чуваа лични податоци во прелистувачот — исчисти ги.
+    try { localStorage.removeItem('kiko_applications'); } catch (e) { /* ignore */ }
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('kiko_applications', JSON.stringify(applications));
-  }, [applications]);
+  const openAdmin = () => { window.location.hash = 'admin'; };
+  const closeAdmin = () => { history.replaceState(null, '', window.location.pathname); setView('customer'); };
 
   const handleSubmitApplication = (application) => {
-    setApplications([...applications, application]);
-    console.log('📧 Email sent to:', application.institution);
-    console.log('Application data:', application);
+    console.log('📨 Барање испратено до:', application.institution, application.saved ? '(зачувано)' : '(НЕ е зачувано на серверот)');
   };
 
   return (
     <div style={styles.app}>
-      <CustomerView 
-        onSubmitApplication={handleSubmitApplication}
-        onAdminClick={() => {}}
-      />
+      {view === 'admin' ? (
+        <AdminView onClose={closeAdmin} endpoint={APPLICATIONS_ENDPOINT} />
+      ) : (
+        <CustomerView
+          onSubmitApplication={handleSubmitApplication}
+          onAdminClick={openAdmin}
+        />
+      )}
     </div>
   );
 }
