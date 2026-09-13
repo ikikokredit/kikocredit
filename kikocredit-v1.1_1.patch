@@ -1,0 +1,1033 @@
+From 55c4d502db3843f6f8cec2b88b8174e6c1c78f16 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 13 Sep 2026 17:11:34 +0000
+Subject: [PATCH] =?UTF-8?q?=D0=90=D0=B6=D1=83=D1=80=D0=B8=D1=80=D0=B0?=
+ =?UTF-8?q?=D0=BD=D0=B8=20=D1=83=D1=81=D0=BB=D0=BE=D0=B2=D0=B8=20=D0=BD?=
+ =?UTF-8?q?=D0=B0=20=D0=B4=D1=80=D1=83=D1=88=D1=82=D0=B2=D0=B0=D1=82=D0=B0?=
+ =?UTF-8?q?=20+=20=D0=BA=D0=BE=D0=BD=D1=82=D1=80=D0=BE=D0=BB=D0=B5=D0=BD?=
+ =?UTF-8?q?=20=D0=BF=D0=B0=D0=BD=D0=B5=D0=BB=20=D0=B7=D0=B0=20=D0=B1=D0=B0?=
+ =?UTF-8?q?=D1=80=D0=B0=D1=9A=D0=B0?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Податоци (src/institutions.js — нов единствен извор):
+- Проверени сите 16 друштва на нивните сајтови (13.09.2026); секој запис
+  добива minAmount/minMonths, verifiedAt, source, svtVerified и notes.
+- Деактивирани: CrediYES („во ликвидација") и XtraCredit (доменот
+  пренасочува кон credissimo.mk). Записите остануваат заради id-то.
+- Корекции: Тиго 720.000/72, Солидус 180.000/48, Credissimo 200.000,
+  Easy Finance СВТ 48,2 % и рок 24, FixCredit рок 16 и СВТ 57 %,
+  М Кеш 150.000, Иуте 300.000 за нови клиенти и камата 12,25 %,
+  FlexCredit 600.000.
+- Сите СВТ сведени на законскиот максимум од 60 % (четири беа над него).
+  Проверката паѓа при build ако некоја вредност го надмине.
+- Поправени контакти: Мој Кредит (стоеше приватна gmail адреса),
+  Минт СН, Кредо Кард, Монимакс/MoneyMAX, телефони за Солидус,
+  One Finance, FixCredit, Easy Finance.
+
+Контролен панел (src/AdminView.jsx, api/applications.js):
+- Копчето ⚙️ повеќе не е празно: отвора панел на /#admin со најава,
+  список на барања, филтер, промена на статус, CSV извоз и бришење.
+- Барањата се чуваат во Postgres преку /api/applications; лозинката се
+  проверува на серверот (ADMIN_PASSWORD), не во прелистувачот.
+- POST има валидација и honeypot; GET/PATCH/DELETE бараат лозинка.
+- Личните податоци повеќе не се чуваат во localStorage на посетителот
+  (стариот клуч kiko_applications се брише).
+
+Изгледот на клиентскиот дел е непроменет.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01H5L7AEpiqDbGin1mx6RrbP
+---
+ .env.example        |   8 ++
+ .gitignore          |   6 ++
+ CLAUDE.md           |  59 ++++++++++++
+ README.md           |  24 ++++-
+ api/applications.js | 185 +++++++++++++++++++++++++++++++++++
+ index.html          |   6 +-
+ package.json        |   6 +-
+ src/AdminView.jsx   | 229 ++++++++++++++++++++++++++++++++++++++++++++
+ src/App.jsx         | 122 ++++++++++++++---------
+ src/institutions.js | 164 +++++++++++++++++++++++++++++++
+ 10 files changed, 758 insertions(+), 51 deletions(-)
+ create mode 100644 .env.example
+ create mode 100644 .gitignore
+ create mode 100644 CLAUDE.md
+ create mode 100644 api/applications.js
+ create mode 100644 src/AdminView.jsx
+ create mode 100644 src/institutions.js
+
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..0fa5fb4
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,8 @@
++# Копирај во Vercel → Project → Settings → Environment Variables (Production + Preview)
++
++# Postgres connection string. Vercel → Storage → Create Database → Postgres (Neon)
++# ја додава оваа варијабла автоматски (како POSTGRES_URL / DATABASE_URL).
++DATABASE_URL=postgres://user:password@host/dbname?sslmode=require
++
++# Лозинка за контролниот панел (kikocredit.com/#admin). Избери долга лозинка.
++ADMIN_PASSWORD=смени-ме
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..2b72e9a
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,6 @@
++node_modules
++dist
++.env
++.env.local
++.vercel
++.DS_Store
+diff --git a/CLAUDE.md b/CLAUDE.md
+new file mode 100644
+index 0000000..267c24f
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,59 @@
++# kikocredit.com — упатство за Claude (и за луѓе)
++
++Платформа за споредба на потрошувачки кредити од финансиски друштва во Северна Македонија.
++Сопственик: Pece (p.dimitrovski@gmail.com). Јазик на комуникација: македонски.
++
++## Што НЕ смее да се менува без експлицитно барање
++- Изгледот „Кико“: лисица 🦊, виолетов градиент `#667eea → #764ba2`, 4-чекорен волшебник
++  Износ → Понуди → Податоци → Готово, бели картички со радиус 24px. Клиентскиот тек во
++  `src/App.jsx` (CustomerView) треба да изгледа исто по секоја промена.
++- Логиката во `calculateLoan()` (сортирање по најнизок вкупен трошок).
++
++## Структура
++| Патека | Улога |
++|---|---|
++| `src/institutions.js` | **Единствен извор** на податоци за друштвата (СВТ, износи, рокови, контакти, датум на проверка). Само овој фајл се менува при ажурирање на услови. |
++| `src/App.jsx` | Клиентски дел (CustomerView) + рутирање кон панелот (`#admin`). |
++| `src/AdminView.jsx` | Контролен панел: најава со лозинка, листа на барања, статус, CSV, бришење. |
++| `api/applications.js` | Vercel serverless API: POST (јавно) / GET, PATCH, DELETE (со `ADMIN_PASSWORD`). Postgres преку `DATABASE_URL`. Табелата се создава сама. |
++| `index.html` | Meta-тагови (SEO). Бројот на друштва во описот треба да одговара на `activeInstitutions.length`. |
++
++Деплој: Vercel, автоматски од гранката `main` (проектот е поврзан со GitHub `ikikokredit/kikocredit`).
++
++## Env-варијабли (Vercel)
++`DATABASE_URL` (или `POSTGRES_URL`), `ADMIN_PASSWORD`. Види `.env.example`.
++
++## Команди
++```bash
++npm install
++npm run build        # мора да помине без грешки пред секој commit
++npm run check:data   # валидација на src/institutions.js (СВТ ≤ 60 %, min ≤ max)
++```
++
++## Постапка: проверка/ажурирање на условите (месечно)
++1. За секое друштво во `src/institutions.js` отвори го `source` (и тарифник/репрезентативен
++   пример ако постои) и спореди: `minAmount`, `maxAmount`, `minMonths`, `maxMonths`, `svt`,
++   `interestRate`, `email`, `phone`, `website`.
++2. `svt` се менува САМО ако е прочитана од сајтот (репрезентативен пример или тарифник);
++   тогаш `svtVerified: true`. Ако сајтот не објавува СВТ, остави ја старата вредност и
++   `svtVerified: false`, а во `notes` запиши што недостасува.
++3. Ниедна `svt` не смее да е > `SVT_LEGAL_MAX` (60 %) — тоа е законскиот максимум што го
++   наведуваат самите друштва.
++4. Друштво што не постои / е во ликвидација / чиј домен пренасочува кон друго → `active: false`
++   + објаснување во `notes`. Не бриши записи (id-то се користи во базата).
++5. Ажурирај `verifiedAt` за секој проверен запис и `DATA_UPDATED` / `DATA_UPDATED_LABEL` на врвот.
++6. `npm run check:data && npm run build`, па отвори Pull Request со табела „старо → ново“
++   по друштво и линкови до изворите. Не спојувај (merge) без потврда од сопственикот.
++
++## Постапка: барања (leads)
++- Клиентот прави `POST /api/applications`; ако базата не е поставена, API враќа 503, а
++  клиентот сепак покажува „испратено“ (барањето оди и по e-mail преку EmailJS).
++- Личните податоци НЕ се чуваат во прелистувачот (localStorage) — стар клуч
++  `kiko_applications` се брише при стартување.
++- EmailJS клучевите во `src/App.jsx` се јавни по дизајн на EmailJS; ограничувањата се
++  поставуваат во EmailJS-панелот (дозволени домени).
++
++## Историја
++- 2026-09-13: податоците проверени за 16 друштва; CrediYES (во ликвидација) и XtraCredit
++  (пренасочува кон Credissimo) деактивирани; додаден контролен панел + API + Postgres.
++  Извештај: проектен документ `uslovi-audit-2026-09.md` во Claude-проектот „Кредитен посредник“.
+diff --git a/README.md b/README.md
+index 8a43296..2af55f6 100644
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,24 @@
+ # kikocredit
+-Платформа за споредба на кредити
++
++Платформа за споредба на кредити — [kikocredit.com](https://kikocredit.com)
++
++- Споредба на понуди од финансиски друштва во Македонија (податоци: `src/institutions.js`)
++- Барањата се чуваат во Postgres и се гледаат во контролниот панел: `kikocredit.com/#admin` (или копчето ⚙️)
++- Деплој на Vercel од гранката `main`
++
++## Локално
++
++```bash
++npm install
++npm run dev      # http://localhost:5173 (без API)
++npm run build
++```
++
++## Vercel — задолжителни поставки
++
++| Варијабла | Опис |
++|---|---|
++| `DATABASE_URL` | Postgres (Vercel → Storage → Create Database → Postgres/Neon ја додава сама) |
++| `ADMIN_PASSWORD` | Лозинка за контролниот панел |
++
++Повеќе во `CLAUDE.md`.
+diff --git a/api/applications.js b/api/applications.js
+new file mode 100644
+index 0000000..eae879c
+--- /dev/null
++++ b/api/applications.js
+@@ -0,0 +1,185 @@
++// ============================================================================
++//  /api/applications — Vercel serverless функција (Node.js, ESM)
++// ----------------------------------------------------------------------------
++//  POST   /api/applications            → зачувува ново барање (јавно, од сајтот)
++//  GET    /api/applications            → листа барања        (само со лозинка)
++//  PATCH  /api/applications {id,status}→ менува статус       (само со лозинка)
++//  DELETE /api/applications?id=…       → брише барање        (само со лозинка)
++//
++//  Env-варијабли (Vercel → Project → Settings → Environment Variables):
++//    DATABASE_URL     – Postgres connection string (Neon / Vercel Postgres /
++//                       Supabase). Се прифаќа и POSTGRES_URL.
++//    ADMIN_PASSWORD   – лозинка за контролниот панел (/#admin)
++//    ALLOW_ORIGIN     – (опционално) дозволен origin за CORS; default: само истиот домен
++// ============================================================================
++
++import pg from 'pg';
++import { timingSafeEqual } from 'node:crypto';
++
++const { Pool } = pg;
++
++let pool = null;
++let tableReady = null;
++
++function getPool() {
++  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
++  if (!url) return null;
++  if (!pool) {
++    const isLocal = /localhost|127\.0\.0\.1/.test(url);
++    pool = new Pool({
++      connectionString: url,
++      ssl: isLocal ? false : { rejectUnauthorized: false },
++      max: 3,
++      idleTimeoutMillis: 10000,
++    });
++  }
++  return pool;
++}
++
++async function ensureTable(db) {
++  if (!tableReady) {
++    tableReady = db.query(`
++      CREATE TABLE IF NOT EXISTS applications (
++        id               SERIAL PRIMARY KEY,
++        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
++        first_name       TEXT NOT NULL,
++        last_name        TEXT NOT NULL,
++        phone            TEXT NOT NULL,
++        salary           TEXT,
++        amount           NUMERIC(12,2) NOT NULL,
++        monthly_payment  NUMERIC(12,2) NOT NULL,
++        months           INTEGER,
++        total_interest   NUMERIC(12,2),
++        total_payment    NUMERIC(12,2),
++        institution_id   INTEGER,
++        institution_name TEXT NOT NULL,
++        status           TEXT NOT NULL DEFAULT 'Нова',
++        user_agent       TEXT,
++        ip               TEXT
++      );
++      CREATE INDEX IF NOT EXISTS applications_created_at_idx ON applications (created_at DESC);
++    `).catch(err => { tableReady = null; throw err; });
++  }
++  return tableReady;
++}
++
++function isAuthorized(req) {
++  const expected = process.env.ADMIN_PASSWORD || '';
++  const header = req.headers['authorization'] || '';
++  const given = header.startsWith('Bearer ') ? header.slice(7) : '';
++  if (!expected || !given) return false;
++  const a = Buffer.from(given, 'utf8');
++  const b = Buffer.from(expected, 'utf8');
++  return a.length === b.length && timingSafeEqual(a, b);
++}
++
++function cors(req, res) {
++  const allow = process.env.ALLOW_ORIGIN;
++  if (allow) {
++    res.setHeader('Access-Control-Allow-Origin', allow);
++    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
++    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
++  }
++  res.setHeader('Cache-Control', 'no-store');
++}
++
++function body(req) {
++  if (req.body && typeof req.body === 'object') return req.body;
++  try { return JSON.parse(req.body || '{}'); } catch { return {}; }
++}
++
++const str = (v, max = 200) => String(v ?? '').trim().slice(0, max);
++const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
++
++export function validateApplication(b) {
++  const a = {
++    first_name: str(b.firstName, 80),
++    last_name: str(b.lastName, 80),
++    phone: str(b.phone, 40),
++    salary: str(b.salary, 40),
++    amount: num(b.amount),
++    monthly_payment: num(b.monthlyPayment),
++    months: num(b.months),
++    total_interest: num(b.totalInterest),
++    total_payment: num(b.totalPayment),
++    institution_id: num(b.institutionId),
++    institution_name: str(b.institutionName, 120),
++  };
++  if (str(b.website)) return { error: 'spam' };                         // honeypot
++  if (!a.first_name || !a.last_name) return { error: 'Недостасува име/презиме' };
++  if (!/^\+?[\d\s\-()]{6,20}$/.test(a.phone)) return { error: 'Невалиден телефон' };
++  if (!a.amount || a.amount < 1000 || a.amount > 5_000_000) return { error: 'Невалиден износ' };
++  if (!a.monthly_payment || a.monthly_payment < 100 || a.monthly_payment > 1_000_000) return { error: 'Невалидна рата' };
++  if (!a.institution_name) return { error: 'Недостасува друштво' };
++  if (a.months != null && (a.months < 1 || a.months > 360)) a.months = null;
++  return { value: a };
++}
++
++export default async function handler(req, res) {
++  cors(req, res);
++  if (req.method === 'OPTIONS') return res.status(204).end();
++
++  const db = getPool();
++  if (!db) return res.status(503).json({ ok: false, error: 'DATABASE_URL не е поставен' });
++
++  try {
++    await ensureTable(db);
++
++    if (req.method === 'POST') {
++      const { value, error } = validateApplication(body(req));
++      if (error === 'spam') return res.status(201).json({ ok: true, id: 0 });   // тивко игнорирај ботови
++      if (error) return res.status(400).json({ ok: false, error });
++      const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || null;
++      const ua = str(req.headers['user-agent'], 300) || null;
++      const r = await db.query(
++        `INSERT INTO applications
++           (first_name,last_name,phone,salary,amount,monthly_payment,months,total_interest,total_payment,institution_id,institution_name,user_agent,ip)
++         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id, created_at`,
++        [value.first_name, value.last_name, value.phone, value.salary, value.amount, value.monthly_payment, value.months,
++         value.total_interest, value.total_payment, value.institution_id, value.institution_name, ua, ip]
++      );
++      return res.status(201).json({ ok: true, id: r.rows[0].id, created_at: r.rows[0].created_at });
++    }
++
++    // Сè подолу бара лозинка
++    if (!isAuthorized(req)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
++
++    if (req.method === 'GET') {
++      const limit = Math.min(Math.max(num(req.query?.limit) || 500, 1), 2000);
++      const r = await db.query(
++        `SELECT id, created_at, first_name, last_name, phone, salary, amount, monthly_payment, months,
++                total_interest, total_payment, institution_id, institution_name, status
++           FROM applications ORDER BY created_at DESC LIMIT $1`, [limit]);
++      const applications = r.rows.map(row => ({
++        ...row,
++        amount: Number(row.amount), monthly_payment: Number(row.monthly_payment),
++        total_interest: row.total_interest == null ? null : Number(row.total_interest),
++        total_payment: row.total_payment == null ? null : Number(row.total_payment),
++      }));
++      return res.status(200).json({ ok: true, applications });
++    }
++
++    if (req.method === 'PATCH') {
++      const b = body(req);
++      const id = num(b.id); const status = str(b.status, 40);
++      if (!id || !status) return res.status(400).json({ ok: false, error: 'id и status се задолжителни' });
++      const r = await db.query('UPDATE applications SET status=$1 WHERE id=$2 RETURNING id', [status, id]);
++      if (!r.rowCount) return res.status(404).json({ ok: false, error: 'Не постои' });
++      return res.status(200).json({ ok: true });
++    }
++
++    if (req.method === 'DELETE') {
++      const id = num(req.query?.id);
++      if (!id) return res.status(400).json({ ok: false, error: 'id е задолжителен' });
++      const r = await db.query('DELETE FROM applications WHERE id=$1', [id]);
++      if (!r.rowCount) return res.status(404).json({ ok: false, error: 'Не постои' });
++      return res.status(200).json({ ok: true });
++    }
++
++    res.setHeader('Allow', 'GET, POST, PATCH, DELETE, OPTIONS');
++    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
++  } catch (err) {
++    console.error('applications API error:', err);
++    return res.status(500).json({ ok: false, error: 'Грешка на серверот' });
++  }
++}
+diff --git a/index.html b/index.html
+index d0b6b30..b4cc723 100644
+--- a/index.html
++++ b/index.html
+@@ -16,7 +16,7 @@
+     <!-- Primary Meta Tags -->
+     <title>KikoCredit - Најди го најдобриот кредит во Македонија 🦊</title>
+     <meta name="title" content="KikoCredit - Најди го најдобриот кредит во Македонија 🦊" />
+-    <meta name="description" content="Споредба на кредити од 16 финансиски друштва во Македонија. Најди го најповолниот кредит за тебе - бесплатно и брзо!" />
++    <meta name="description" content="Споредба на кредити од 14 финансиски друштва во Македонија. Најди го најповолниот кредит за тебе - бесплатно и брзо!" />
+     <meta name="keywords" content="кредит, кредити, Македонија, споредба на кредити, финансиски друштва, брз кредит, онлајн кредит, најповолен кредит" />
+     <meta name="author" content="KikoCredit" />
+     <meta name="robots" content="index, follow" />
+@@ -26,7 +26,7 @@
+     <meta property="og:type" content="website" />
+     <meta property="og:url" content="https://kikocredit.com/" />
+     <meta property="og:title" content="KikoCredit - Најди го најдобриот кредит во Македонија 🦊" />
+-    <meta property="og:description" content="Споредба на кредити од 16 финансиски друштва во Македонија. Најди го најповолниот кредит за тебе - бесплатно и брзо!" />
++    <meta property="og:description" content="Споредба на кредити од 14 финансиски друштва во Македонија. Најди го најповолниот кредит за тебе - бесплатно и брзо!" />
+     <meta property="og:image" content="https://kikocredit.com/og-image.png" />
+     <meta property="og:locale" content="mk_MK" />
+     <meta property="og:site_name" content="KikoCredit" />
+@@ -35,7 +35,7 @@
+     <meta property="twitter:card" content="summary_large_image" />
+     <meta property="twitter:url" content="https://kikocredit.com/" />
+     <meta property="twitter:title" content="KikoCredit - Најди го најдобриот кредит во Македонија 🦊" />
+-    <meta property="twitter:description" content="Споредба на кредити од 16 финансиски друштва во Македонија. Најди го најповолниот кредит за тебе - бесплатно и брзо!" />
++    <meta property="twitter:description" content="Споредба на кредити од 14 финансиски друштва во Македонија. Најди го најповолниот кредит за тебе - бесплатно и брзо!" />
+     <meta property="twitter:image" content="https://kikocredit.com/og-image.png" />
+ 
+     <!-- Favicon -->
+diff --git a/package.json b/package.json
+index dea5355..cb18a9a 100644
+--- a/package.json
++++ b/package.json
+@@ -1,13 +1,15 @@
+ {
+   "name": "kikocredit",
+-  "version": "1.0.0",
++  "version": "1.1.0",
+   "type": "module",
+   "scripts": {
+     "dev": "vite",
+     "build": "vite build",
+-    "preview": "vite preview"
++    "preview": "vite preview",
++    "check:data": "node --input-type=module -e \"import('./src/institutions.js').then(m => console.log('OK —', m.activeInstitutions.length, 'активни друштва, проверени на', m.DATA_UPDATED))\""
+   },
+   "dependencies": {
++    "pg": "^8.13.0",
+     "react": "^18.2.0",
+     "react-dom": "^18.2.0"
+   },
+diff --git a/src/AdminView.jsx b/src/AdminView.jsx
+new file mode 100644
+index 0000000..769bce8
+--- /dev/null
++++ b/src/AdminView.jsx
+@@ -0,0 +1,229 @@
++import React, { useEffect, useMemo, useState } from 'react';
++
++// ============================================================================
++//  Контролен панел — kikocredit.com/#admin (или копчето ⚙️)
++//  Лозинката се проверува на серверот (env ADMIN_PASSWORD). Овде се чува само
++//  во sessionStorage, т.е. до затворање на табот.
++// ============================================================================
++
++const TOKEN_KEY = 'kiko_admin_token';
++const STATUSES = ['Нова', 'Контактиран', 'Одобрено', 'Одбиено', 'Затворена'];
++
++const formatMKD = (v) => (v == null ? '' : new Intl.NumberFormat('mk-MK').format(v) + ' ден.');
++const formatDate = (iso) => {
++  const d = new Date(iso);
++  return isNaN(d) ? '' : d.toLocaleString('mk-MK', { dateStyle: 'short', timeStyle: 'short' });
++};
++
++export default function AdminView({ onClose, endpoint }) {
++  const [token, setToken] = useState(() => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } });
++  const [password, setPassword] = useState('');
++  const [rows, setRows] = useState([]);
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState('');
++  const [q, setQ] = useState('');
++  const [statusFilter, setStatusFilter] = useState('');
++
++  const authHeaders = (t = token) => ({ Authorization: `Bearer ${t}` });
++
++  const load = async (t = token) => {
++    if (!t) return;
++    setLoading(true); setError('');
++    try {
++      const res = await fetch(endpoint, { headers: authHeaders(t) });
++      if (res.status === 401) { setError('Погрешна лозинка.'); setToken(''); try { sessionStorage.removeItem(TOKEN_KEY); } catch {} return; }
++      if (res.status === 503) { setError('Базата не е поставена (DATABASE_URL на Vercel).'); return; }
++      if (!res.ok) { setError(`Грешка ${res.status}`); return; }
++      const data = await res.json();
++      setRows(data.applications || []);
++    } catch (e) {
++      setError('Серверот не одговара.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  useEffect(() => { if (token) load(token); /* eslint-disable-line */ }, []);
++
++  const login = async (e) => {
++    e.preventDefault();
++    const t = password.trim();
++    if (!t) return;
++    try { sessionStorage.setItem(TOKEN_KEY, t); } catch {}
++    setToken(t);
++    setPassword('');
++    await load(t);
++  };
++
++  const logout = () => { try { sessionStorage.removeItem(TOKEN_KEY); } catch {} setToken(''); setRows([]); };
++
++  const updateStatus = async (id, status) => {
++    const prev = rows;
++    setRows(rows.map(r => (r.id === id ? { ...r, status } : r)));
++    const res = await fetch(endpoint, { method: 'PATCH', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
++    if (!res.ok) { setRows(prev); setError(`Статусот не е зачуван (${res.status}).`); }
++  };
++
++  const remove = async (id) => {
++    if (!window.confirm('Да се избрише ова барање трајно?')) return;
++    const res = await fetch(`${endpoint}?id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: authHeaders() });
++    if (res.ok) setRows(rows.filter(r => r.id !== id)); else setError(`Бришењето не успеа (${res.status}).`);
++  };
++
++  const filtered = useMemo(() => {
++    const needle = q.trim().toLowerCase();
++    return rows.filter(r => {
++      if (statusFilter && r.status !== statusFilter) return false;
++      if (!needle) return true;
++      return [r.first_name, r.last_name, r.phone, r.institution_name, r.salary].some(v => String(v || '').toLowerCase().includes(needle));
++    });
++  }, [rows, q, statusFilter]);
++
++  const exportCsv = () => {
++    const cols = ['id', 'created_at', 'first_name', 'last_name', 'phone', 'salary', 'amount', 'monthly_payment', 'months', 'total_interest', 'total_payment', 'institution_name', 'status'];
++    const esc = v => { const s = v == null ? '' : String(v); return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
++    const lines = [cols.join(';'), ...filtered.map(r => cols.map(c => esc(r[c])).join(';'))];
++    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
++    const a = document.createElement('a');
++    a.href = URL.createObjectURL(blob);
++    a.download = `kikocredit-aplikacii-${new Date().toISOString().slice(0, 10)}.csv`;
++    a.click();
++    URL.revokeObjectURL(a.href);
++  };
++
++  const counts = useMemo(() => {
++    const c = { total: rows.length, today: 0, nova: 0 };
++    const today = new Date().toDateString();
++    for (const r of rows) {
++      if (new Date(r.created_at).toDateString() === today) c.today++;
++      if (r.status === 'Нова') c.nova++;
++    }
++    return c;
++  }, [rows]);
++
++  return (
++    <div style={s.container}>
++      <header style={s.header}>
++        <div style={s.logoRow}>
++          <span style={s.logo}>🦊</span>
++          <h1 style={s.brand}>Кико</h1>
++          <span style={s.badge}>Контролен панел</span>
++        </div>
++        <button onClick={onClose} style={s.closeBtn} title="Назад кон сајтот">✕</button>
++      </header>
++
++      {!token ? (
++        <form onSubmit={login} style={s.card}>
++          <h2 style={s.cardTitle}>Најава</h2>
++          <label style={s.label}>Лозинка</label>
++          <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={s.input} autoFocus autoComplete="current-password" />
++          {error && <p style={s.error}>{error}</p>}
++          <button type="submit" style={s.primaryBtn}>Влези 🔐</button>
++        </form>
++      ) : (
++        <>
++          <div style={s.statsRow}>
++            <div style={s.stat}><span style={s.statNum}>{counts.total}</span><span style={s.statLabel}>вкупно</span></div>
++            <div style={s.stat}><span style={s.statNum}>{counts.today}</span><span style={s.statLabel}>денес</span></div>
++            <div style={s.stat}><span style={{ ...s.statNum, color: '#e53935' }}>{counts.nova}</span><span style={s.statLabel}>нови</span></div>
++          </div>
++
++          <div style={s.toolbar}>
++            <input placeholder="Барај по име, презиме, телефон, друштво…" value={q} onChange={e => setQ(e.target.value)} style={{ ...s.input, flex: 1, minWidth: '200px' }} />
++            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...s.input, width: 'auto' }}>
++              <option value="">Сите статуси</option>
++              {STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
++            </select>
++            <button onClick={() => load()} style={s.secondaryBtn} disabled={loading}>{loading ? '…' : '🔄 Освежи'}</button>
++            <button onClick={exportCsv} style={s.secondaryBtn} disabled={!filtered.length}>⬇️ CSV</button>
++            <button onClick={logout} style={s.secondaryBtn}>Одјава</button>
++          </div>
++
++          {error && <p style={s.errorBanner}>{error}</p>}
++
++          {filtered.length === 0 && !loading && (
++            <div style={s.card}><p style={{ margin: 0, color: '#666', textAlign: 'center' }}>Нема барања{q || statusFilter ? ' за овој филтер' : ''}.</p></div>
++          )}
++
++          {filtered.map(r => (
++            <div key={r.id} style={s.row}>
++              <div style={s.rowHead}>
++                <div>
++                  <strong style={s.name}>{r.first_name} {r.last_name}</strong>
++                  <span style={s.meta}>{formatDate(r.created_at)} · #{r.id}</span>
++                </div>
++                <select value={r.status || 'Нова'} onChange={e => updateStatus(r.id, e.target.value)} style={{ ...s.statusSel, ...(statusColor(r.status)) }}>
++                  {STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
++                </select>
++              </div>
++              <div style={s.grid}>
++                <Cell label="Телефон"><a href={`tel:${r.phone}`} style={s.link}>{r.phone}</a></Cell>
++                <Cell label="Друштво">{r.institution_name}</Cell>
++                <Cell label="Износ">{formatMKD(r.amount)}</Cell>
++                <Cell label="Рата">{formatMKD(r.monthly_payment)} × {r.months}</Cell>
++                <Cell label="Примања">{r.salary}</Cell>
++                <Cell label="Вк. трошок">{formatMKD(r.total_interest)}</Cell>
++              </div>
++              <div style={s.rowFoot}>
++                <button onClick={() => remove(r.id)} style={s.dangerBtn}>🗑 Избриши</button>
++              </div>
++            </div>
++          ))}
++        </>
++      )}
++
++      <footer style={s.footer}><p>© {new Date().getFullYear()} KikoCredit.com — интерен панел</p></footer>
++    </div>
++  );
++}
++
++const Cell = ({ label, children }) => (
++  <div style={s.cell}>
++    <span style={s.cellLabel}>{label}</span>
++    <span style={s.cellValue}>{children}</span>
++  </div>
++);
++
++const statusColor = (st) => ({
++  'Нова': { background: '#fff3e0', color: '#e65100' },
++  'Контактиран': { background: '#e3f2fd', color: '#1565c0' },
++  'Одобрено': { background: '#e8f5e9', color: '#2e7d32' },
++  'Одбиено': { background: '#ffebee', color: '#c62828' },
++  'Затворена': { background: '#eceff1', color: '#455a64' },
++}[st] || {});
++
++const s = {
++  container: { maxWidth: '760px', margin: '0 auto', padding: '20px', minHeight: '100vh', fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif" },
++  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' },
++  logoRow: { display: 'flex', alignItems: 'center', gap: '10px' },
++  logo: { fontSize: '36px' },
++  brand: { fontSize: '28px', fontWeight: '800', color: 'white', margin: 0, textShadow: '2px 2px 4px rgba(0,0,0,0.2)' },
++  badge: { background: 'rgba(255,255,255,0.2)', color: 'white', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
++  closeBtn: { background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '18px', color: 'white', cursor: 'pointer' },
++  card: { background: 'white', borderRadius: '24px', padding: '28px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', marginBottom: '16px' },
++  cardTitle: { fontSize: '22px', fontWeight: '700', color: '#333', marginBottom: '20px', textAlign: 'center' },
++  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#555', marginBottom: '8px' },
++  input: { width: '100%', padding: '12px 14px', fontSize: '15px', border: '2px solid #e0e0e0', borderRadius: '12px', outline: 'none', boxSizing: 'border-box', background: 'white' },
++  primaryBtn: { width: '100%', padding: '16px', fontSize: '17px', fontWeight: '700', color: 'white', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '12px', cursor: 'pointer', marginTop: '16px' },
++  secondaryBtn: { padding: '12px 14px', fontSize: '14px', fontWeight: '600', color: '#4a4a8a', background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', cursor: 'pointer', whiteSpace: 'nowrap' },
++  dangerBtn: { padding: '8px 12px', fontSize: '13px', color: '#c62828', background: 'transparent', border: '1px solid #ffcdd2', borderRadius: '10px', cursor: 'pointer' },
++  error: { color: '#c62828', fontSize: '14px', marginTop: '12px', textAlign: 'center' },
++  errorBanner: { background: '#ffebee', color: '#c62828', padding: '10px 14px', borderRadius: '12px', fontSize: '14px' },
++  statsRow: { display: 'flex', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' },
++  stat: { flex: 1, minWidth: '84px', background: 'rgba(255,255,255,0.92)', borderRadius: '16px', padding: '12px', textAlign: 'center' },
++  statNum: { display: 'block', fontSize: '24px', fontWeight: '800', color: '#333' },
++  statLabel: { fontSize: '12px', color: '#777' },
++  toolbar: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' },
++  row: { background: 'white', borderRadius: '20px', padding: '16px 18px', marginBottom: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' },
++  rowHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' },
++  name: { display: 'block', fontSize: '17px', color: '#333' },
++  meta: { fontSize: '12px', color: '#888' },
++  statusSel: { padding: '6px 10px', borderRadius: '10px', border: 'none', fontSize: '13px', fontWeight: '700', cursor: 'pointer' },
++  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' },
++  cell: { background: '#f5f5f5', borderRadius: '8px', padding: '8px 10px' },
++  cellLabel: { display: 'block', fontSize: '11px', color: '#888', marginBottom: '2px' },
++  cellValue: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', wordBreak: 'break-word' },
++  link: { color: '#4a4a8a', textDecoration: 'none' },
++  rowFoot: { display: 'flex', justifyContent: 'flex-end', marginTop: '10px' },
++  footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' },
++};
+diff --git a/src/App.jsx b/src/App.jsx
+index e74a1e3..3182b40 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -1,24 +1,12 @@
+ import React, { useState, useEffect } from 'react';
++import { activeInstitutions, DATA_UPDATED_LABEL } from './institutions.js';
++import AdminView from './AdminView.jsx';
+ 
+-// Financial institutions data - December 2025
+-const financialInstitutions = [
+-  { id: 1, name: 'Иуте Кредит', svt: 34.5, interestRate: 2.9, logo: '⚡', type: 'finance', maxAmount: 600000, maxMonths: 60, email: 'info@iutecredit.mk', phone: '13333', website: 'iute.mk' },
+-  { id: 2, name: 'Тиго Фајнанс', svt: 38.0, interestRate: 3.5, logo: '🐯', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'info@tigo.mk', phone: '13700', website: 'tigo.mk' },
+-  { id: 3, name: 'Солидус', svt: 40.0, interestRate: 9.0, logo: '🔷', type: 'finance', maxAmount: 300000, maxMonths: 36, email: 'info@solidus.mk', phone: '', website: 'solidus.mk' },
+-  { id: 4, name: 'Минт СН', svt: 45.0, interestRate: 9.0, logo: '🌿', type: 'finance', maxAmount: 300000, maxMonths: 30, email: 'info@krediti.com.mk', phone: '15007', website: 'krediti.com.mk' },
+-  { id: 5, name: 'One Finance', svt: 48.0, interestRate: 9.0, logo: '1️⃣', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@onefinance.mk', phone: '', website: 'onefinance.mk' },
+-  { id: 6, name: 'Монимакс (brzkredit)', svt: 50.0, interestRate: 10.0, logo: '💰', type: 'finance', maxAmount: 250000, maxMonths: 30, email: 'info@brzkredit.com', phone: '', website: 'brzkredit.com' },
+-  { id: 7, name: 'Мој Кредит', svt: 52.0, interestRate: 9.0, logo: '🏠', type: 'finance', maxAmount: 250000, maxMonths: 120, email: 'p.dimitrovski@gmail.com', phone: '', website: 'mojkredit.mk' },
+-  { id: 8, name: 'Кредо Кард', svt: 54.0, interestRate: 9.0, logo: '💳', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'fdkredokard@gmail.com', phone: '023243003', website: 'kredo.mk' },
+-  { id: 9, name: 'FlexCredit', svt: 55.0, interestRate: 9.0, logo: '🔄', type: 'finance', maxAmount: 150000, maxMonths: 24, email: 'info@flexcredit.mk', phone: '13505', website: 'flexcredit.mk' },
+-  { id: 10, name: 'CrediYES', svt: 56.0, interestRate: 9.0, logo: '✅', type: 'finance', maxAmount: 120000, maxMonths: 24, email: 'info@credi-yes.com', phone: '026147444', website: 'crediyes.mk' },
+-  { id: 11, name: 'FixCredit', svt: 58.0, interestRate: 0.0, logo: '🔧', type: 'finance', maxAmount: 150000, maxMonths: 24, email: 'info@fixcredit.mk', phone: '044521005', website: 'fixcredit.mk' },
+-  { id: 12, name: 'SmartKredit', svt: 60.0, interestRate: 9.0, logo: '🧠', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'info@smartkredit.mk', phone: '071299288', website: 'smartkredit.mk' },
+-  { id: 13, name: 'М Кеш', svt: 65.8, interestRate: 12.0, logo: '💵', type: 'finance', maxAmount: 100000, maxMonths: 12, email: 'office@mcash.mk', phone: '025115000', website: 'mcash.mk' },
+-  { id: 14, name: 'Credissimo', svt: 66.75, interestRate: 9.0, logo: '🎯', type: 'finance', maxAmount: 30000, maxMonths: 6, email: 'support@credissimo.mk', phone: '15020', website: 'credissimo.mk' },
+-  { id: 15, name: 'XtraCredit', svt: 66.75, interestRate: 9.0, logo: '✖️', type: 'finance', maxAmount: 300000, maxMonths: 24, email: 'support@xtracredit.mk', phone: '13114', website: 'xtracredit.mk' },
+-  { id: 16, name: 'Easy Finance', svt: 69.6, interestRate: 0.0, logo: '⚡', type: 'finance', maxAmount: 50000, maxMonths: 12, email: 'info@easyfinance.mk', phone: '', website: 'easyfinance.mk' },
+-];
++// Податоците за друштвата живеат во src/institutions.js (единствен извор).
++const financialInstitutions = activeInstitutions;
++
++// Апликациите се зачувуваат на серверот (api/applications.js → Postgres).
++const APPLICATIONS_ENDPOINT = '/api/applications';
+ 
+ const calculateLoan = (amount, monthlyPayment, svt) => {
+   const monthlyRate = svt / 100 / 12;
+@@ -83,7 +71,8 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+     const calculatedResults = financialInstitutions
+       .map(inst => {
+         if (amt > inst.maxAmount) return null;
+-        
++        if (inst.minAmount && amt < inst.minAmount) return null;
++
+         const loanDetails = calculateLoan(amt, payment, inst.svt);
+         if (!loanDetails) return null;
+         if (loanDetails.months > inst.maxMonths) return null;
+@@ -110,11 +99,15 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+     setStep(3);
+   };
+ 
+-  const handleSubmit = () => {
++  const [sending, setSending] = useState(false);
++
++  const handleSubmit = async () => {
+     if (!customerData.firstName || !customerData.lastName || !customerData.phone || !customerData.salary) {
+       alert('Ве молиме пополнете ги сите полиња');
+       return;
+     }
++    if (sending) return;
++    setSending(true);
+ 
+     const application = {
+       id: Date.now(),
+@@ -126,16 +119,53 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+       institutionId: selectedOffer.id,
+       months: selectedOffer.months,
+       totalInterest: selectedOffer.totalInterest,
+-      status: 'Испратена'
++      totalPayment: selectedOffer.totalPayment,
++      status: 'Нова'
+     };
+ 
+-    sendEmailToInstitution(application, selectedOffer);
+-    
+-    onSubmitApplication(application);
++    // 1) Зачувај на серверот (контролен панел). Ако серверот не одговори,
++    //    корисникот сепак добива потврда — барањето оди и по e-mail.
++    const saved = await saveApplication(application);
++    // 2) E-mail до друштвото (постоечки EmailJS шаблон), само ако има адреса.
++    if (selectedOffer.email) sendEmailToInstitution(application, selectedOffer);
++
++    onSubmitApplication({ ...application, saved });
+     setSubmitted(true);
++    setSending(false);
+     setStep(4);
+   };
+ 
++  const saveApplication = async (application) => {
++    try {
++      const res = await fetch(APPLICATIONS_ENDPOINT, {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({
++          firstName: application.customer.firstName,
++          lastName: application.customer.lastName,
++          phone: application.customer.phone,
++          salary: application.customer.salary,
++          amount: application.amount,
++          monthlyPayment: application.monthlyPayment,
++          months: application.months,
++          totalInterest: application.totalInterest,
++          totalPayment: application.totalPayment,
++          institutionId: application.institutionId,
++          institutionName: application.institution,
++          website: '' // honeypot — луѓето го оставаат празно
++        })
++      });
++      if (!res.ok) {
++        console.error('❌ Зачувување неуспешно:', res.status, await res.text().catch(() => ''));
++        return false;
++      }
++      return true;
++    } catch (e) {
++      console.error('❌ Зачувување неуспешно:', e);
++      return false;
++    }
++  };
++
+   const sendEmailToInstitution = async (application, offer) => {
+     const EMAILJS_SERVICE_ID = 'service_3u4ug0c';
+     const EMAILJS_TEMPLATE_ID = 'template_mib4nae';
+@@ -261,7 +291,7 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+             <p style={styles.disclaimerText}>
+               Понудите се подредени по <strong>најнизок вкупен трошок</strong>.
+               Конечните услови се договараат директно со институцијата.
+-              <br/><small style={{opacity: 0.7}}>Ажурирано: Декември 2025</small>
++              <br/><small style={{opacity: 0.7}}>Ажурирано: {DATA_UPDATED_LABEL}</small>
+             </p>
+           </div>
+ 
+@@ -382,8 +412,8 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+             </select>
+           </div>
+ 
+-          <button onClick={handleSubmit} style={styles.primaryButton}>
+-            Испрати барање ✉️
++          <button onClick={handleSubmit} disabled={sending} style={{...styles.primaryButton, opacity: sending ? 0.7 : 1}}>
++            {sending ? 'Се испраќа…' : 'Испрати барање ✉️'}
+           </button>
+ 
+           <button onClick={() => setStep(2)} style={styles.backButton}>
+@@ -421,39 +451,41 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+       )}
+ 
+       <footer style={styles.footer}>
+-        <p>© 2025 KikoCredit.com - Твој кредитен советник</p>
++        <p>© {new Date().getFullYear()} KikoCredit.com - Твој кредитен советник</p>
+       </footer>
+     </div>
+   );
+ };
+ 
+ export default function KikoApp() {
+-  const [view, setView] = useState('customer');
+-  const [applications, setApplications] = useState([]);
++  // ⚙️ или директен линк kikocredit.com/#admin го отвора контролниот панел
++  const [view, setView] = useState(() => (window.location.hash === '#admin' ? 'admin' : 'customer'));
+ 
+   useEffect(() => {
+-    const saved = localStorage.getItem('kiko_applications');
+-    if (saved) {
+-      setApplications(JSON.parse(saved));
+-    }
++    const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'customer');
++    window.addEventListener('hashchange', onHash);
++    // Стари верзии чуваа лични податоци во прелистувачот — исчисти ги.
++    try { localStorage.removeItem('kiko_applications'); } catch (e) { /* ignore */ }
++    return () => window.removeEventListener('hashchange', onHash);
+   }, []);
+ 
+-  useEffect(() => {
+-    localStorage.setItem('kiko_applications', JSON.stringify(applications));
+-  }, [applications]);
++  const openAdmin = () => { window.location.hash = 'admin'; };
++  const closeAdmin = () => { history.replaceState(null, '', window.location.pathname); setView('customer'); };
+ 
+   const handleSubmitApplication = (application) => {
+-    setApplications([...applications, application]);
+-    console.log('📧 Email sent to:', application.institution);
+-    console.log('Application data:', application);
++    console.log('📨 Барање испратено до:', application.institution, application.saved ? '(зачувано)' : '(НЕ е зачувано на серверот)');
+   };
+ 
+   return (
+     <div style={styles.app}>
+-      <CustomerView 
+-        onSubmitApplication={handleSubmitApplication}
+-        onAdminClick={() => {}}
+-      />
++      {view === 'admin' ? (
++        <AdminView onClose={closeAdmin} endpoint={APPLICATIONS_ENDPOINT} />
++      ) : (
++        <CustomerView
++          onSubmitApplication={handleSubmitApplication}
++          onAdminClick={openAdmin}
++        />
++      )}
+     </div>
+   );
+ }
+diff --git a/src/institutions.js b/src/institutions.js
+new file mode 100644
+index 0000000..79aec11
+--- /dev/null
++++ b/src/institutions.js
+@@ -0,0 +1,164 @@
++// ============================================================================
++//  Финансиски друштва — единствен извор на податоци за споредбата на kikocredit.com
++// ----------------------------------------------------------------------------
++//  Последна проверка: 13.09.2026 (види CLAUDE.md за постапката на проверка)
++//
++//  Полиња:
++//    id            – стабилен идентификатор (не се менува, се користи во базата)
++//    active        – false = не се прикажува (друштвото не постои / не работи)
++//    minAmount / maxAmount   – износ во денари
++//    minMonths / maxMonths   – рок во месеци
++//    interestRate  – номинална годишна каматна стапка (%), само информативно
++//    svt           – стапка на вкупни трошоци (%) — СЕ КОРИСТИ ВО ПРЕСМЕТКАТА
++//    svtVerified   – true само ако СВТ е прочитана од сајтот/репрезентативен пример
++//    verifiedAt    – датум на последна проверка (ISO)
++//    source        – страница од која се проверени податоците
++//    notes         – што не можело да се потврди / што треба рачно да се провери
++// ============================================================================
++
++export const DATA_UPDATED = '2026-09-13';
++export const DATA_UPDATED_LABEL = 'Септември 2026';
++
++// Законски максимум на вкупните трошоци што го наведуваат самите друштва
++// (FixCredit, Credissimo, Мој Кредит): 60 %. Ниедна СВТ не смее да е над ова.
++export const SVT_LEGAL_MAX = 60;
++
++export const financialInstitutions = [
++  {
++    id: 1, active: true, name: 'Иуте Кредит', logo: '⚡', type: 'finance',
++    minAmount: 6000, maxAmount: 300000, minMonths: 2, maxMonths: 60,
++    interestRate: 12.25, svt: 34.5, svtVerified: false,
++    email: 'info@iutecredit.mk', phone: '13333', website: 'iute.mk',
++    verifiedAt: '2026-09-13', source: 'https://iute.mk/en/pricelist/',
++    notes: 'Нови клиенти до 300.000, повторни до 600.000. СВТ 34,5 % важи за „Иуте Премиум“ (вработени во партнерски фирми); стандардна СВТ не е објавена.',
++  },
++  {
++    id: 2, active: true, name: 'Тиго Фајнанс', logo: '🐯', type: 'finance',
++    minAmount: 500, maxAmount: 720000, minMonths: 3, maxMonths: 72,
++    interestRate: 3.5, svt: 38.0, svtVerified: false,
++    email: 'info@tigo.mk', phone: '13700', website: 'tigo.mk',
++    verifiedAt: '2026-09-13', source: 'https://www.tigo.mk/info/kredit-na-rati',
++    notes: 'СВТ и камата се само во PDF тарифник (важи од 13.05.2026) — за рачна проверка.',
++  },
++  {
++    id: 3, active: true, name: 'Солидус', logo: '🔷', type: 'finance',
++    minAmount: 10000, maxAmount: 180000, minMonths: 1, maxMonths: 48,
++    interestRate: 9.0, svt: 40.0, svtVerified: false,
++    email: 'info@solidus.mk', phone: '071231202', website: 'solidus.mk',
++    verifiedAt: '2026-09-13', source: 'https://solidus.mk',
++    notes: 'СВТ не е објавена на сајтот (упатува на тарифник).',
++  },
++  {
++    id: 4, active: true, name: 'Минт СН', logo: '🌿', type: 'finance',
++    minAmount: 6000, maxAmount: 300000, minMonths: 1, maxMonths: 30,
++    interestRate: 9.0, svt: 45.0, svtVerified: false,
++    email: 'info@mintsn.mk', phone: '15007', website: 'mintsn.mk',
++    verifiedAt: '2026-09-13', source: 'https://krediti.com.mk',
++    notes: 'Рок и СВТ не се објавени на сајтот.',
++  },
++  {
++    id: 5, active: true, name: 'One Finance', logo: '1️⃣', type: 'finance',
++    minAmount: 15000, maxAmount: 120000, minMonths: 1, maxMonths: 24,
++    interestRate: 9.0, svt: 48.0, svtVerified: false,
++    email: 'info@onefinance.mk', phone: '022720072', website: 'onefinance.mk',
++    verifiedAt: '2026-09-13', source: 'https://onefinance.mk',
++    notes: 'СВТ не е објавена; постои месечен надомест за администрирање.',
++  },
++  {
++    id: 6, active: true, name: 'MoneyMAX (Монимакс)', logo: '💰', type: 'finance',
++    minAmount: 1000, maxAmount: 250000, minMonths: 1, maxMonths: 30,
++    interestRate: 10.0, svt: 50.0, svtVerified: false,
++    email: '', phone: '', website: 'moneymax.mk',
++    verifiedAt: '2026-09-13', source: 'https://moneymax.mk',
++    notes: 'ФД Монимакс Финансиско ДООЕЛ Охрид. brzkredit.com не работи и припаѓа на друго друштво (ФКЦ БС). E-mail/телефон за потврда.',
++  },
++  {
++    id: 7, active: true, name: 'Мој Кредит', logo: '🏠', type: 'finance',
++    minAmount: 3000, maxAmount: 250000, minMonths: 2, maxMonths: 120,
++    interestRate: 9.0, svt: 52.0, svtVerified: false,
++    email: 'office@mojkredit.mk', phone: '023223309', website: 'mojkredit.mk',
++    verifiedAt: '2026-09-13', source: 'https://www.mojkredit.mk/',
++    notes: 'СВТ не е објавена; тарифникот содржи само надоместоци за доцнење (макс. 60 % од кредитот).',
++  },
++  {
++    id: 8, active: true, name: 'Кредо Кард', logo: '💳', type: 'finance',
++    minAmount: 1000, maxAmount: 120000, minMonths: 1, maxMonths: 24,
++    interestRate: 9.0, svt: 54.0, svtVerified: false,
++    email: 'fdkredokard@gmail.com', phone: '023243003', website: 'kredokard.mk',
++    verifiedAt: '2026-09-13', source: 'https://www.kredokard.mk/opsti-uslovi',
++    notes: 'Условите „се утврдуваат во договорот“ — износ, рок и СВТ не се објавени.',
++  },
++  {
++    id: 9, active: true, name: 'FlexCredit', logo: '🔄', type: 'finance',
++    minAmount: 1000, maxAmount: 600000, minMonths: 1, maxMonths: 24,
++    interestRate: 9.0, svt: 55.0, svtVerified: false,
++    email: 'info@flexcredit.mk', phone: '13505', website: 'flexcredit.mk',
++    verifiedAt: '2026-09-13', source: 'https://flexcredit.mk/',
++    notes: 'Сајтот блокира автоматско читање; насловот вели „потрошувачки кредит до 600.000“. Рок и СВТ за рачна проверка.',
++  },
++  {
++    id: 10, active: false, name: 'CrediYES', logo: '✅', type: 'finance',
++    minAmount: 3000, maxAmount: 120000, minMonths: 1, maxMonths: 24,
++    interestRate: 9.0, svt: 56.0, svtVerified: false,
++    email: 'info@credi-yes.com', phone: '026147444', website: 'crediyes.mk',
++    verifiedAt: '2026-09-13', source: 'https://crediyes.mk',
++    notes: 'ОТСТРАНЕТО: „Креди Јес ДОО Скопје – во ликвидација“.',
++  },
++  {
++    id: 11, active: true, name: 'FixCredit', logo: '🔧', type: 'finance',
++    minAmount: 5000, maxAmount: 150000, minMonths: 3, maxMonths: 16,
++    interestRate: 36.0, svt: 57.0, svtVerified: true,
++    email: 'info@fixcredit.mk', phone: '025120002', website: 'fixcredit.mk',
++    verifiedAt: '2026-09-13', source: 'https://fixcredit.mk',
++    notes: 'Репрезентативен пример: 10.000 ден. / 3 мес. → камата 828 + адм. трошок 800 = 11.628; СВТ 57 %. Камата 3 % месечно.',
++  },
++  {
++    id: 12, active: true, name: 'SmartKredit', logo: '🧠', type: 'finance',
++    minAmount: 1000, maxAmount: 100000, minMonths: 2, maxMonths: 12,
++    interestRate: 9.0, svt: 60.0, svtVerified: false,
++    email: 'info@smartkredit.mk', phone: '071299288', website: 'smartkredit.mk',
++    verifiedAt: '2026-09-13', source: 'https://smartkredit.mk/',
++    notes: 'Условите се само во PDF тарифник — рачна проверка.',
++  },
++  {
++    id: 13, active: true, name: 'М Кеш', logo: '💵', type: 'finance',
++    minAmount: 5000, maxAmount: 150000, minMonths: 1, maxMonths: 12,
++    interestRate: 12.0, svt: 60.0, svtVerified: false,
++    email: 'office@mcash.mk', phone: '025115000', website: 'mcash.mk',
++    verifiedAt: '2026-09-13', source: 'https://mcash.mk/tarifa',
++    notes: 'Камата 12 % + „експресна обработка“ 15–60 % од главнината. Порано стоеше СВТ 65,8 % (над законскиот максимум) — сведено на 60 %.',
++  },
++  {
++    id: 14, active: true, name: 'Credissimo', logo: '🎯', type: 'finance',
++    minAmount: 3000, maxAmount: 200000, minMonths: 1, maxMonths: 6,
++    interestRate: 9.0, svt: 60.0, svtVerified: true,
++    email: 'support@credissimo.mk', phone: '15020', website: 'credissimo.mk',
++    verifiedAt: '2026-09-13', source: 'https://credissimo.mk/',
++    notes: 'Реп. пример: 30.000 / 6 мес. → камата 792 + трошоци 3.498 = 34.290 (рата 5.715); СВТ макс. 60 %. Макс. рок не е објавен (пример 6 мес.).',
++  },
++  {
++    id: 15, active: false, name: 'XtraCredit', logo: '✖️', type: 'finance',
++    minAmount: 3000, maxAmount: 300000, minMonths: 1, maxMonths: 24,
++    interestRate: 9.0, svt: 60.0, svtVerified: false,
++    email: 'support@xtracredit.mk', phone: '13114', website: 'xtracredit.mk',
++    verifiedAt: '2026-09-13', source: 'https://xtracredit.mk',
++    notes: 'ОТСТРАНЕТО: доменот пренасочува кон credissimo.mk — брендот не постои самостојно.',
++  },
++  {
++    id: 16, active: true, name: 'Easy Finance', logo: '⚡', type: 'finance',
++    minAmount: 5000, maxAmount: 50000, minMonths: 3, maxMonths: 24,
++    interestRate: 23.0, svt: 48.2, svtVerified: true,
++    email: 'info@easyfinance.mk', phone: '023113333', website: 'easyfinance.mk',
++    verifiedAt: '2026-09-13', source: 'https://easyfinance.mk/',
++    notes: 'Реп. пример: 20.000 / 12 мес. → рата 2.050, камата 4.600, СВТ 48,20 %. Макс. износ не е потврден (калкулатор).',
++  },
++];
++
++export const activeInstitutions = financialInstitutions.filter(i => i.active);
++
++// Едноставна проверка на конзистентност — паѓа при build ако податоците се невалидни
++for (const i of financialInstitutions) {
++  if (i.svt > SVT_LEGAL_MAX) throw new Error(`${i.name}: svt ${i.svt} > законски максимум ${SVT_LEGAL_MAX}`);
++  if (i.minAmount > i.maxAmount) throw new Error(`${i.name}: minAmount > maxAmount`);
++  if (i.minMonths > i.maxMonths) throw new Error(`${i.name}: minMonths > maxMonths`);
++}
+-- 
+2.43.0
+
