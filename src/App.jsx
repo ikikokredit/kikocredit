@@ -1,27 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { activeInstitutions, DATA_UPDATED_LABEL } from './institutions.js';
-import AdminView from './AdminView.jsx';
+import React, { useState, useEffect, useMemo } from 'react';
+import { activeInstitutions, DATA_UPDATED_LABEL, typeLabel } from './institutions.js';
+import StatsView from './StatsView.jsx';
 
-// Податоците за друштвата живеат во src/institutions.js (единствен извор).
-const financialInstitutions = activeInstitutions;
+// ============================================================================
+//  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
+//  Тек: Износ + рата → Понуди (рати, камата, вкупен трошок) → „Аплицирај" ги носи
+//  посетителите на страницата на институцијата. Не се собираат лични податоци;
+//  се брои само анонимен клик (институција, износ, рата) за статистика.
+// ============================================================================
 
-// Апликациите се зачувуваат на серверот (api/applications.js → Postgres).
-const APPLICATIONS_ENDPOINT = '/api/applications';
+const CLICKS_ENDPOINT = '/api/clicks';
 
 const calculateLoan = (amount, monthlyPayment, svt) => {
   const monthlyRate = svt / 100 / 12;
   if (monthlyPayment <= amount * monthlyRate) return null;
-  
+
   let balance = amount;
   let totalInterest = 0;
   let months = 0;
   let lastPayment = 0;
-  
+
   while (balance > 0 && months < 360) {
     months++;
     const interestThisMonth = balance * monthlyRate;
     totalInterest += interestThisMonth;
-    
+
     if (balance + interestThisMonth <= monthlyPayment) {
       lastPayment = balance + interestThisMonth;
       balance = 0;
@@ -30,9 +33,9 @@ const calculateLoan = (amount, monthlyPayment, svt) => {
       balance -= principalThisMonth;
     }
   }
-  
+
   const totalPayment = (months - 1) * monthlyPayment + lastPayment;
-  
+
   return {
     months,
     totalPayment: Math.round(totalPayment),
@@ -41,46 +44,63 @@ const calculateLoan = (amount, monthlyPayment, svt) => {
   };
 };
 
-const formatMKD = (amount) => {
-  return new Intl.NumberFormat('mk-MK').format(amount) + ' ден.';
+const formatMKD = (amount) => new Intl.NumberFormat('mk-MK').format(amount) + ' ден.';
+// Процент со децимална запирка (не зависи од локалните податоци на прелистувачот)
+const formatPct = (v) => {
+  const n = Math.round(v * 100) / 100;
+  let s = n.toFixed(n * 10 % 1 === 0 ? 1 : 2);
+  return s.replace('.', ',') + ' %';
 };
 
-const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
+// Анонимно броење на кликовите „Аплицирај" (без лични податоци)
+const trackClick = (offer, amount, monthlyPayment) => {
+  try {
+    const payload = JSON.stringify({
+      institutionId: offer.id, institutionName: offer.name, type: offer.type,
+      amount, monthlyPayment, months: offer.months, svt: offer.svt,
+      totalInterest: offer.totalInterest, totalPayment: offer.totalPayment,
+      website: '' // honeypot
+    });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(CLICKS_ENDPOINT, new Blob([payload], { type: 'application/json' }));
+    } else {
+      fetch(CLICKS_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
+    }
+  } catch (e) { /* статистиката никогаш не смее да го блокира корисникот */ }
+};
+
+const FILTERS = [
+  { key: 'all', label: 'Сите' },
+  { key: 'bank', label: '🏦 Банки' },
+  { key: 'finance', label: '💳 Друштва' },
+];
+
+const CustomerView = ({ onAdminClick }) => {
   const [step, setStep] = useState(1);
   const [amount, setAmount] = useState('');
   const [monthlyPayment, setMonthlyPayment] = useState('');
   const [results, setResults] = useState([]);
-  const [selectedOffer, setSelectedOffer] = useState(null);
-  const [customerData, setCustomerData] = useState({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    salary: ''
-  });
-  const [submitted, setSubmitted] = useState(false);
+  const [filter, setFilter] = useState('all');
 
   const handleCalculate = () => {
     const amt = parseFloat(amount);
     const payment = parseFloat(monthlyPayment);
-    
+
     if (!amt || !payment || amt <= 0 || payment <= 0) {
       alert('Ве молиме внесете валидни вредности');
       return;
     }
 
-    const calculatedResults = financialInstitutions
+    const calculatedResults = activeInstitutions
       .map(inst => {
         if (amt > inst.maxAmount) return null;
-        if (inst.minAmount && amt < inst.minAmount) return null;
+        if (inst.minAmount != null && amt < inst.minAmount) return null;
 
         const loanDetails = calculateLoan(amt, payment, inst.svt);
         if (!loanDetails) return null;
         if (loanDetails.months > inst.maxMonths) return null;
-        
-        return {
-          ...inst,
-          ...loanDetails
-        };
+
+        return { ...inst, ...loanDetails };
       })
       .filter(r => r !== null)
       .sort((a, b) => a.totalInterest - b.totalInterest);
@@ -91,135 +111,36 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
     }
 
     setResults(calculatedResults);
+    setFilter('all');
     setStep(2);
   };
 
-  const handleSelectOffer = (offer) => {
-    setSelectedOffer(offer);
-    setStep(3);
-  };
+  const visibleResults = useMemo(() => {
+    if (filter === 'all') return results;
+    if (filter === 'bank') return results.filter(r => r.type === 'bank' || r.type === 'savings');
+    return results.filter(r => r.type === 'finance');
+  }, [results, filter]);
 
-  const [sending, setSending] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!customerData.firstName || !customerData.lastName || !customerData.phone || !customerData.salary) {
-      alert('Ве молиме пополнете ги сите полиња');
-      return;
-    }
-    if (sending) return;
-    setSending(true);
-
-    const application = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      customer: customerData,
-      amount: parseFloat(amount),
-      monthlyPayment: parseFloat(monthlyPayment),
-      institution: selectedOffer.name,
-      institutionId: selectedOffer.id,
-      months: selectedOffer.months,
-      totalInterest: selectedOffer.totalInterest,
-      totalPayment: selectedOffer.totalPayment,
-      status: 'Нова'
-    };
-
-    // 1) Зачувај на серверот (контролен панел). Ако серверот не одговори,
-    //    корисникот сепак добива потврда — барањето оди и по e-mail.
-    const saved = await saveApplication(application);
-    // 2) E-mail до друштвото (постоечки EmailJS шаблон), само ако има адреса.
-    if (selectedOffer.email) sendEmailToInstitution(application, selectedOffer);
-
-    onSubmitApplication({ ...application, saved });
-    setSubmitted(true);
-    setSending(false);
-    setStep(4);
-  };
-
-  const saveApplication = async (application) => {
-    try {
-      const res = await fetch(APPLICATIONS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: application.customer.firstName,
-          lastName: application.customer.lastName,
-          phone: application.customer.phone,
-          salary: application.customer.salary,
-          amount: application.amount,
-          monthlyPayment: application.monthlyPayment,
-          months: application.months,
-          totalInterest: application.totalInterest,
-          totalPayment: application.totalPayment,
-          institutionId: application.institutionId,
-          institutionName: application.institution,
-          website: '' // honeypot — луѓето го оставаат празно
-        })
-      });
-      if (!res.ok) {
-        console.error('❌ Зачувување неуспешно:', res.status, await res.text().catch(() => ''));
-        return false;
-      }
-      return true;
-    } catch (e) {
-      console.error('❌ Зачувување неуспешно:', e);
-      return false;
-    }
-  };
-
-  const sendEmailToInstitution = async (application, offer) => {
-    const EMAILJS_SERVICE_ID = 'service_3u4ug0c';
-    const EMAILJS_TEMPLATE_ID = 'template_mib4nae';
-    const EMAILJS_PUBLIC_KEY = 'jK-ZcW9KXBg_3515a';
-
-    const templateParams = {
-      to_email: offer.email,
-      to_name: offer.name,
-      from_name: 'KikoCredit.com',
-      customer_name: `${application.customer.firstName} ${application.customer.lastName}`,
-      customer_phone: application.customer.phone,
-      customer_salary: application.customer.salary,
-      loan_amount: formatMKD(application.amount),
-      monthly_payment: formatMKD(application.monthlyPayment),
-      num_installments: offer.months,
-      total_cost: formatMKD(offer.totalInterest),
-      total_payment: formatMKD(offer.totalPayment),
-      application_id: `KK-${Date.now()}`,
-      application_date: new Date().toLocaleString('mk-MK')
-    };
-
-    try {
-      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          service_id: EMAILJS_SERVICE_ID,
-          template_id: EMAILJS_TEMPLATE_ID,
-          user_id: EMAILJS_PUBLIC_KEY,
-          template_params: templateParams
-        })
-      });
-      
-      if (response.ok) {
-        console.log('✅ Email sent to:', offer.email);
-      } else {
-        console.error('❌ Email failed:', response.statusText);
-      }
-    } catch (error) {
-      console.error('❌ Email error:', error);
-    }
-  };
+  const counts = useMemo(() => ({
+    all: results.length,
+    bank: results.filter(r => r.type === 'bank' || r.type === 'savings').length,
+    finance: results.filter(r => r.type === 'finance').length,
+  }), [results]);
 
   const resetForm = () => {
     setStep(1);
     setAmount('');
     setMonthlyPayment('');
     setResults([]);
-    setSelectedOffer(null);
-    setCustomerData({ firstName: '', lastName: '', phone: '', salary: '' });
-    setSubmitted(false);
+    setFilter('all');
   };
+
+  const amt = parseFloat(amount);
+  const payment = parseFloat(monthlyPayment);
+
+  // „Најповолно" се доделува само на понуда со ПОТВРДЕНА СВТ — понуда чија СВТ
+  // не е објавена (прикажана е номиналната стапка) не смее да се прогласи за најевтина.
+  const bestIndex = filter === 'all' ? visibleResults.findIndex(o => o.svtVerified) : -1;
 
   return (
     <div style={styles.container}>
@@ -229,33 +150,33 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
           <h1 style={styles.brandName}>Кико</h1>
         </div>
         <p style={styles.tagline}>Најди го најдобриот кредит за тебе</p>
-        <button onClick={onAdminClick} style={styles.adminButton}>
+        <button onClick={onAdminClick} style={styles.adminButton} aria-label="Статистика">
           ⚙️
         </button>
       </header>
 
       <div style={styles.progressContainer}>
         <div style={styles.progressBar}>
-          <div style={{...styles.progressFill, width: `${(step / 4) * 100}%`}}></div>
+          <div style={{...styles.progressFill, width: `${(step / 2) * 100}%`}}></div>
         </div>
         <div style={styles.progressSteps}>
-          <span style={step >= 1 ? styles.activeStep : styles.inactiveStep}>Износ</span>
+          <span style={step >= 1 ? styles.activeStep : styles.inactiveStep}>Износ и рата</span>
           <span style={step >= 2 ? styles.activeStep : styles.inactiveStep}>Понуди</span>
-          <span style={step >= 3 ? styles.activeStep : styles.inactiveStep}>Податоци</span>
-          <span style={step >= 4 ? styles.activeStep : styles.inactiveStep}>Готово</span>
         </div>
       </div>
 
       {step === 1 && (
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Колку ти треба?</h2>
-          
+
           <div style={styles.inputGroup}>
             <label style={styles.label}>Износ на кредит (ден.)</label>
             <input
               type="number"
+              inputMode="numeric"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCalculate()}
               placeholder="пр. 50000"
               style={styles.input}
             />
@@ -265,8 +186,10 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
             <label style={styles.label}>Месечна рата која можеш да ја плаќаш (ден.)</label>
             <input
               type="number"
+              inputMode="numeric"
               value={monthlyPayment}
               onChange={(e) => setMonthlyPayment(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCalculate()}
               placeholder="пр. 5000"
               style={styles.input}
             />
@@ -275,6 +198,11 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
           <button onClick={handleCalculate} style={styles.primaryButton}>
             Пресметај понуди 📊
           </button>
+
+          <p style={styles.legalNote}>
+            Споредба на {activeInstitutions.length} банки и финансиски друштва во Македонија.
+            Пресметката е информативна; кредитот го склучуваш директно со институцијата.
+          </p>
         </div>
       )}
 
@@ -282,7 +210,7 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
         <div style={styles.resultsContainer}>
           <div style={styles.summaryCard}>
             <p style={styles.summaryText}>
-              За <strong>{formatMKD(parseFloat(amount))}</strong> со рата од <strong>{formatMKD(parseFloat(monthlyPayment))}</strong>
+              За <strong>{formatMKD(amt)}</strong> со рата од <strong>{formatMKD(payment)}</strong>
             </p>
           </div>
 
@@ -290,175 +218,107 @@ const CustomerView = ({ onSubmitApplication, onAdminClick }) => {
             <span style={styles.disclaimerIcon}>ℹ️</span>
             <p style={styles.disclaimerText}>
               Понудите се подредени по <strong>најнизок вкупен трошок</strong>.
-              Конечните услови се договараат директно со институцијата.
+              Со клик на „Аплицирај" одиш на страницата на институцијата; конечните услови се договараат директно со неа.
               <br/><small style={{opacity: 0.7}}>Ажурирано: {DATA_UPDATED_LABEL}</small>
             </p>
           </div>
 
+          <div style={styles.filterRow}>
+            {FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                style={{ ...styles.filterChip, ...(filter === f.key ? styles.filterChipActive : {}) }}
+              >
+                {f.label} <span style={styles.filterCount}>{counts[f.key]}</span>
+              </button>
+            ))}
+          </div>
+
           <h2 style={styles.sectionTitle}>Достапни понуди</h2>
-          
-          {results.map((offer, index) => (
-            <div 
-              key={offer.id} 
+
+          {visibleResults.length === 0 && (
+            <div style={styles.summaryCard}>
+              <p style={styles.summaryText}>Нема понуди во оваа категорија за внесените износ и рата.</p>
+            </div>
+          )}
+
+          {visibleResults.map((offer, index) => (
+            <div
+              key={offer.id}
               style={{
                 ...styles.offerCard,
-                ...(index === 0 ? styles.bestOffer : {})
+                ...(index === bestIndex ? styles.bestOffer : {})
               }}
-              onClick={() => handleSelectOffer(offer)}
             >
-              {index === 0 && <span style={styles.bestBadge}>⭐ Најповолно</span>}
-              
+              {index === bestIndex && <span style={styles.bestBadge}>⭐ Најповолно</span>}
+
               <div style={styles.offerHeader}>
                 <span style={styles.institutionLogo}>{offer.logo}</span>
                 <div>
                   <span style={styles.institutionName}>{offer.name}</span>
-                  <span style={styles.financeBadge}>
-                    💳 Фин. друштво
-                  </span>
+                  <span style={styles.financeBadge}>{typeLabel(offer.type)}</span>
                 </div>
               </div>
-              
+
               <div style={styles.offerDetails}>
-                <div style={styles.offerDetail}>
-                  <span style={styles.detailLabel}>Износ</span>
-                  <span style={styles.detailValue}>{formatMKD(parseFloat(amount))}</span>
-                </div>
-                <div style={styles.offerDetail}>
-                  <span style={styles.detailLabel}>Рата</span>
-                  <span style={styles.detailValue}>{formatMKD(parseFloat(monthlyPayment))}</span>
-                </div>
                 <div style={styles.offerDetail}>
                   <span style={styles.detailLabel}>Бр. рати</span>
                   <span style={styles.detailValue}>{offer.months}</span>
                 </div>
                 <div style={styles.offerDetail}>
-                  <span style={styles.detailLabel}>Вк. трошок</span>
+                  <span style={styles.detailLabel}>Камата (СВТ){!offer.svtVerified && '*'}</span>
+                  <span style={styles.detailValue}>{formatPct(offer.svt)}</span>
+                </div>
+                <div style={styles.offerDetail}>
+                  <span style={styles.detailLabel}>Рата</span>
+                  <span style={styles.detailValue}>{formatMKD(payment)}</span>
+                </div>
+                <div style={styles.offerDetail}>
+                  <span style={styles.detailLabel}>Вк. камата</span>
                   <span style={styles.detailValueHighlight}>{formatMKD(offer.totalInterest)}</span>
                 </div>
               </div>
-              
+
               <div style={styles.totalRow}>
                 <span>Вкупно за враќање:</span>
                 <span style={styles.totalAmount}>{formatMKD(offer.totalPayment)}</span>
               </div>
-              
-              <button style={styles.selectButton}>
-                Избери →
-              </button>
+
+              <a
+                href={offer.applyUrl}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                onClick={() => trackClick(offer, amt, payment)}
+                style={styles.selectButton}
+              >
+                Аплицирај кај {offer.name} →
+              </a>
+              {!offer.svtVerified && (
+                <p style={styles.svtNote}>* СВТ не е објавена на сајтот на институцијата — пресметката е приближна.</p>
+              )}
             </div>
           ))}
 
-          <button onClick={() => setStep(1)} style={styles.backButton}>
-            ← Назад
-          </button>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Твои податоци</h2>
-          
-          <div style={styles.selectedOfferMini}>
-            <span>{selectedOffer.logo} {selectedOffer.name}</span>
-            <span>{formatMKD(parseFloat(amount))} • {selectedOffer.months} рати</span>
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Име</label>
-            <input
-              type="text"
-              value={customerData.firstName}
-              onChange={(e) => setCustomerData({...customerData, firstName: e.target.value})}
-              placeholder="Вашето име"
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Презиме</label>
-            <input
-              type="text"
-              value={customerData.lastName}
-              onChange={(e) => setCustomerData({...customerData, lastName: e.target.value})}
-              placeholder="Вашето презиме"
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Телефон</label>
-            <input
-              type="tel"
-              value={customerData.phone}
-              onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
-              placeholder="07X XXX XXX"
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Месечни примања</label>
-            <select
-              value={customerData.salary}
-              onChange={(e) => setCustomerData({...customerData, salary: e.target.value})}
-              style={styles.input}
-            >
-              <option value="">Избери...</option>
-              <option value="до 15.000">до 15.000 ден</option>
-              <option value="15.000 - 25.000">15.000 - 25.000 ден</option>
-              <option value="25.000 - 40.000">25.000 - 40.000 ден</option>
-              <option value="40.000 - 60.000">40.000 - 60.000 ден</option>
-              <option value="над 60.000">над 60.000 ден</option>
-            </select>
-          </div>
-
-          <button onClick={handleSubmit} disabled={sending} style={{...styles.primaryButton, opacity: sending ? 0.7 : 1}}>
-            {sending ? 'Се испраќа…' : 'Испрати барање ✉️'}
-          </button>
-
-          <button onClick={() => setStep(2)} style={styles.backButton}>
-            ← Назад
-          </button>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div style={styles.successCard}>
-          <div style={styles.successIcon}>✅</div>
-          <h2 style={styles.successTitle}>Барањето е испратено!</h2>
-          <p style={styles.successText}>
-            Твоето барање е испратено до <strong>{selectedOffer.name}</strong>.
-            Очекувај повик од нивни претставник наскоро.
-          </p>
-          
-          <div style={styles.successDetails}>
-            <p><strong>Износ:</strong> {formatMKD(parseFloat(amount))}</p>
-            <p><strong>Месечна рата:</strong> {formatMKD(parseFloat(monthlyPayment))}</p>
-            <p><strong>Период:</strong> {selectedOffer.months} рати</p>
-          </div>
-
-          <div style={styles.disclaimerCardSuccess}>
-            <p style={styles.disclaimerTextSmall}>
-              ⚠️ Оваа пресметка е информативна. Финалните услови (камата, период, рата) 
-              ќе бидат договорени директно со {selectedOffer.name}.
-            </p>
-          </div>
-
-          <button onClick={resetForm} style={styles.primaryButton}>
-            Нова пресметка 🔄
+          <button onClick={resetForm} style={styles.backButton}>
+            ← Нова пресметка
           </button>
         </div>
       )}
 
       <footer style={styles.footer}>
         <p>© {new Date().getFullYear()} KikoCredit.com - Твој кредитен советник</p>
+        <p style={styles.footerSmall}>
+          KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од
+          официјалните страници на институциите; за точните услови важи понудата на самата институција.
+        </p>
       </footer>
     </div>
   );
 };
 
 export default function KikoApp() {
-  // ⚙️ или директен линк kikocredit.com/#admin го отвора контролниот панел
+  // ⚙️ или директен линк kikocredit.com/#admin ја отвора статистиката
   const [view, setView] = useState(() => (window.location.hash === '#admin' ? 'admin' : 'customer'));
 
   useEffect(() => {
@@ -472,19 +332,12 @@ export default function KikoApp() {
   const openAdmin = () => { window.location.hash = 'admin'; };
   const closeAdmin = () => { history.replaceState(null, '', window.location.pathname); setView('customer'); };
 
-  const handleSubmitApplication = (application) => {
-    console.log('📨 Барање испратено до:', application.institution, application.saved ? '(зачувано)' : '(НЕ е зачувано на серверот)');
-  };
-
   return (
     <div style={styles.app}>
       {view === 'admin' ? (
-        <AdminView onClose={closeAdmin} endpoint={APPLICATIONS_ENDPOINT} />
+        <StatsView onClose={closeAdmin} endpoint={CLICKS_ENDPOINT} />
       ) : (
-        <CustomerView
-          onSubmitApplication={handleSubmitApplication}
-          onAdminClick={openAdmin}
-        />
+        <CustomerView onAdminClick={openAdmin} />
       )}
     </div>
   );
@@ -612,6 +465,14 @@ const styles = {
     cursor: 'pointer',
     marginTop: '12px',
   },
+  legalNote: {
+    marginTop: '16px',
+    marginBottom: 0,
+    fontSize: '12px',
+    color: '#888',
+    textAlign: 'center',
+    lineHeight: '1.4',
+  },
   backButton: {
     width: '100%',
     padding: '14px',
@@ -642,7 +503,7 @@ const styles = {
     background: 'rgba(255,255,255,0.9)',
     borderRadius: '12px',
     padding: '12px 16px',
-    marginBottom: '20px',
+    marginBottom: '16px',
     display: 'flex',
     alignItems: 'flex-start',
     gap: '10px',
@@ -656,6 +517,36 @@ const styles = {
     color: '#555',
     lineHeight: '1.4',
   },
+  filterRow: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '16px',
+    flexWrap: 'wrap',
+  },
+  filterChip: {
+    flex: 1,
+    minWidth: '90px',
+    padding: '10px 12px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: 'white',
+    background: 'rgba(255,255,255,0.18)',
+    border: '2px solid rgba(255,255,255,0.35)',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+  filterChipActive: {
+    background: 'white',
+    color: '#5a4fb0',
+    border: '2px solid white',
+  },
+  filterCount: {
+    opacity: 0.75,
+    fontWeight: '500',
+    fontSize: '12px',
+    marginLeft: '4px',
+  },
   sectionTitle: {
     color: 'white',
     fontSize: '18px',
@@ -667,7 +558,6 @@ const styles = {
     borderRadius: '20px',
     padding: '20px',
     marginBottom: '16px',
-    cursor: 'pointer',
     position: 'relative',
     transition: 'transform 0.2s, box-shadow 0.2s',
   },
@@ -752,6 +642,7 @@ const styles = {
     color: '#333',
   },
   selectButton: {
+    display: 'block',
     width: '100%',
     padding: '12px',
     fontSize: '16px',
@@ -761,55 +652,14 @@ const styles = {
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
-  },
-  selectedOfferMini: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 16px',
-    background: '#f0f4ff',
-    borderRadius: '12px',
-    marginBottom: '20px',
-    fontSize: '14px',
-  },
-  successCard: {
-    background: 'white',
-    borderRadius: '24px',
-    padding: '40px 24px',
     textAlign: 'center',
+    textDecoration: 'none',
+    boxSizing: 'border-box',
   },
-  successIcon: {
-    fontSize: '64px',
-    marginBottom: '16px',
-  },
-  successTitle: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: '12px',
-  },
-  successText: {
-    fontSize: '16px',
-    color: '#666',
-    marginBottom: '24px',
-  },
-  successDetails: {
-    background: '#f5f5f5',
-    borderRadius: '12px',
-    padding: '16px',
-    marginBottom: '20px',
-    textAlign: 'left',
-  },
-  disclaimerCardSuccess: {
-    background: '#fff8e1',
-    borderRadius: '12px',
-    padding: '12px 16px',
-    marginBottom: '20px',
-  },
-  disclaimerTextSmall: {
-    margin: 0,
-    fontSize: '12px',
-    color: '#f57c00',
+  svtNote: {
+    margin: '10px 0 0',
+    fontSize: '11px',
+    color: '#999',
     lineHeight: '1.4',
   },
   footer: {
@@ -817,5 +667,11 @@ const styles = {
     padding: '20px',
     color: 'rgba(255,255,255,0.6)',
     fontSize: '12px',
+  },
+  footerSmall: {
+    fontSize: '11px',
+    color: 'rgba(255,255,255,0.5)',
+    lineHeight: '1.4',
+    marginTop: '8px',
   },
 };
