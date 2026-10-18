@@ -1,0 +1,91 @@
+<title>Кико календар на објави</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@600;700&display=swap">
+<style>
+/* Layout: summary band, then one row per week with a card per post (image, caption, copy). */
+:root {
+  --bg: #f6f5fc; --surface: #ffffff; --ink: #28243e; --muted: #6e688c; --line: #e5e2f3;
+  --accent: #5a4fb0; --accent-soft: #eeecfb; --grad-a: #667eea; --grad-b: #764ba2;
+  --wait: #9a5b00; --wait-bg: #fff1d6; --ok: #2e8c58; --ok-bg: #e3f4ea;
+  --f-display: "Unbounded", "Manrope", system-ui, sans-serif;
+  --f-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15131f; --surface: #1e1b2d; --ink: #ecebf6; --muted: #a8a3c2; --line: #2f2b45;
+  --accent: #aea6ff; --accent-soft: #2a2650; --wait: #f3bd62; --wait-bg: #3a2b10; --ok: #7fd3a0; --ok-bg: #17321f; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #15131f; --surface: #1e1b2d; --ink: #ecebf6; --muted: #a8a3c2; --line: #2f2b45;
+  --accent: #aea6ff; --accent-soft: #2a2650; --wait: #f3bd62; --wait-bg: #3a2b10; --ok: #7fd3a0; --ok-bg: #17321f; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.band { background: linear-gradient(135deg, var(--grad-a), var(--grad-b)); color: #fff;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 32px; }
+.band-in { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.brand { font-weight: 800; font-size: 15px; letter-spacing: .02em; opacity: .9; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.6rem, 4vw, 2.3rem); line-height: 1.15; margin: 0; text-wrap: balance; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 5px 14px; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; display: flex; flex-direction: column; gap: 20px; }
+.how { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 10px; }
+.how h2 { margin: 0; font-size: 16px; }
+.how ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 4px; color: var(--muted); }
+.how ol strong { color: var(--ink); }
+.auto { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 14px; color: var(--muted); }
+h2.week { font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; margin: 8px 0 0; color: var(--accent); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 18px; }
+.post { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.date { font-weight: 800; font-variant-numeric: tabular-nums; }
+.pill { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.pill.wait { color: var(--wait); background: var(--wait-bg); }
+.pill.ok { color: var(--ok); background: var(--ok-bg); }
+.post h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.post img { width: 100%; height: auto; border-radius: 14px; display: block; aspect-ratio: 4 / 5; object-fit: cover; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+.chip.file { font-family: var(--f-mono); }
+.cap-head { display: flex; justify-content: space-between; align-items: center; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+button.copy { font: 700 13px var(--f-body); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 10px; padding: 6px 12px; cursor: pointer; }
+button.copy.done { color: var(--ok); background: var(--ok-bg); }
+button.copy:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+pre.caption { margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: var(--f-body); font-size: 14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; max-height: 260px; overflow: auto; }
+details { font-size: 13px; color: var(--muted); }
+summary { cursor: pointer; font-weight: 600; }
+.alt { margin: 6px 0 0; }
+.foot { color: var(--muted); font-size: 13px; }
+</style>
+
+<header class="band"><div class="band-in">
+  <span class="brand">🦊 KikoCredit</span>
+  <h1>Првите 6 објави за Facebook и Instagram</h1>
+  <div class="stats"><span class="stat">20.10 – 01.11.2026</span><span class="stat">вт · чт · нед во 19:00</span><span class="stat">6 објави · 2 мрежи</span></div>
+</div></header>
+
+<main class="wrap">
+  <section class="how" aria-labelledby="how">
+    <h2 id="how">Како се објавуваат</h2>
+    <ol>
+      <li><strong>Одобрени</strong> од Pece на 18.10.2026.</li>
+      <li><strong>Автоматски:</strong> секоја објава оди сама на Facebook и Instagram во 18:57 (Скопје) на закажаниот ден. Известување стигнува на телефон.</li>
+      <li><strong>Промена или откажување:</strong> само кажи му на Claude пред денот на објавата.</li>
+    </ol>
+    <div class="auto"><span class="pill ok">Автоматско објавување: вклучено</span><span>Сликите се испратени како посебни фајлови во разговорот.</span></div>
+  </section>
+<!--CARDS-->
+  <p class="foot">Бројките се општи примери пресметани со калкулаторот на kikocredit.com, без имиња на банки и друштва. Конечните услови ги дава секоја институција.</p>
+</main>
+
+<script>
+document.querySelectorAll('button.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var el = document.getElementById(btn.getAttribute('data-target'));
+    function sel() { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Избрано, Ctrl+C'; }
+    function done() { btn.textContent = 'Копирано'; btn.classList.add('done'); setTimeout(function () { btn.textContent = 'Копирај'; btn.classList.remove('done'); }, 1800); }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.textContent).then(done, sel); else sel(); } catch (e) { sel(); }
+  });
+});
+</script>
