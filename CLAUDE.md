@@ -32,6 +32,7 @@
 | `scripts/prerender.mjs` | Се извршува по `vite build`: пред-генерирана почетна, страници `/krediti/…`, `sitemap.xml`, `llms.txt`. |
 | `public/` | `robots.txt`, `og-image.png` (слика за споделување, 1200×630). |
 | `index.html` | Meta-тагови и schema.org (WebSite, Organization). |
+| `scripts/guides.mjs` | Текстот на водичите `/vodici/…`. Бројките за давателите се пресметуваат од `institutions.js`; `PENALTY_RATE` (законска казнена камата) се ажурира рачно секое полугодие. |
 
 Деплој: Vercel, автоматски од `main` (GitHub `ikikokredit/kikocredit`).
 Env-варијабли (Vercel): `DATABASE_URL` (или `POSTGRES_URL`), `ADMIN_PASSWORD`. Види `.env.example`.
@@ -44,6 +45,8 @@ Env-варијабли (Vercel): `DATABASE_URL` (или `POSTGRES_URL`), `ADMIN_
 | `/krediti/` | Сите активни даватели во табели по СВТ + чести прашања (FAQPage) |
 | `/krediti/banki/`, `/krediti/finansiski-drustva/` | Табела за групата |
 | `/krediti/<slug>/` | Еден давател: износ, рок, СВТ, `notes`, пример пресметка, линкови |
+| `/vodici/` | Листа на водичи |
+| `/vodici/brz-kredit/`, `/vodici/shto-e-svt/`, `/vodici/banka-ili-finansisko-drustvo/` | Водичи (Article + FAQPage), со извори и пример пресметки |
 | `/sitemap.xml`, `/llms.txt` | Генерирани; `robots.txt` е во `public/` |
 
 Правила:
@@ -53,6 +56,10 @@ Env-варијабли (Vercel): `DATABASE_URL` (или `POSTGRES_URL`), `ADMIN_
 - Неактивен давател нема страница; build **паѓа** ако неговото име или адреса се појави во
   генерираните фајлови (заштита за Тиго Фајнанс и сл.).
 - Пример пресметка се прикажува само ако давателот нема свој репрезентативен пример во `notes`.
+- Водичите: секое законско тврдење има член и извор; без имиња на давателите во примерите.
+  Законската граница на СВТ = 5 × законска казнена камата (член 20-а) и се менува на 1 јануари
+  и 1 јули — тогаш ажурирај `PENALTY_RATE` во `scripts/guides.mjs` од објавата на НБРМ
+  (build-от предупредува кога датумот `to` ќе помине).
 - Имињата се подредуваат без `localeCompare` — прелистувачот и Node мора да дадат ист
   редослед, инаку пред-генерираниот HTML не се совпаѓа со React (hydration грешка).
 - Во клиентскиот дел не користи `window`/`document` при првото цртање (само во `useEffect`) —
@@ -85,7 +92,8 @@ npm run check:data   # валидација на src/institutions.js (СВТ ≤
    кон друг домен).
 3. Примени ги правилата погоре; ажурирај `verifiedAt` за секој проверен запис и `DATA_UPDATED` /
    `DATA_UPDATED_LABEL` на врвот.
-4. `npm run check:data && npm run build` мора да поминат.
+4. `npm run check:data && npm run build` мора да поминат. Ако build-от предупреди за
+   `PENALTY_RATE`, ажурирај ја (нова референтна стапка на НБРМ + 8 п.п.) во истиот PR.
 5. Ако има промени → Pull Request со табела „старо → ново" по давател и линкови до изворите.
    **Не спојувај без потврда од сопственикот.** Ако нема промени → само јави „нема промени".
 

@@ -8,6 +8,7 @@
 //       /krediti/banki/                банки и штедилници
 //       /krediti/finansiski-drustva/   финансиски друштва
 //       /krediti/<slug>/               еден давател
+//       /vodici/ и /vodici/<slug>/     водичи (текст во scripts/guides.mjs)
 //  3. Ги генерира dist/sitemap.xml и dist/llms.txt од истите податоци.
 //
 //  Сè се црта од src/institutions.js — при ажурирање на условите страниците се
@@ -18,6 +19,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { GUIDES, guidePath, GUIDES_UPDATED, PENALTY_RATE } from './guides.mjs';
 import {
   activeInstitutions, financialInstitutions, typeLabel, DATA_UPDATED,
 } from '../src/institutions.js';
@@ -132,6 +134,18 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 td a{font-weight:600;text-decoration:none}
 .faq{display:flex;flex-direction:column;gap:14px}
 .faq h3{font-size:15px;margin:0 0 4px}
+.prose{gap:14px}
+table.fit{min-width:0;font-size:13px}
+table.fit td,table.fit th{padding:8px 4px}
+.prose h2{margin-top:10px}
+.prose ul,.prose ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.prose li{padding-left:2px}
+.sources{margin:0;padding-left:18px;font-size:12px;color:#888;display:flex;flex-direction:column;gap:4px}
+.sources a{color:#888;word-break:break-word}
+.guide-list{display:flex;flex-direction:column;gap:12px}
+.guide-item{display:block;text-decoration:none;color:inherit;background:#f4f2fd;border-radius:16px;padding:16px}
+.guide-item strong{display:block;font-size:16px;color:#5a4fb0;margin-bottom:4px}
+.guide-item span{font-size:14px;color:#555}
 .footer{text-align:center;color:rgba(255,255,255,.6);font-size:12px;padding:8px 0 12px}
 .footer p{margin:0}
 .footer .small{color:rgba(255,255,255,.5);font-size:11px;margin-top:8px}
@@ -227,6 +241,80 @@ const itemListLd = (items) => ({
 
 const ctaCalc = `<a class="btn" href="/">Пресметај рата за твојот износ →</a>`;
 
+// Бела лента со линкови до водичите (на збирните страници и кај давателите)
+const CRUMB_GUIDES = { name: 'Водичи', path: '/vodici/' };
+const guidesNav = (except) => `<section style="display:flex;flex-direction:column;gap:10px">
+<h2 class="section-title">📚 Водичи</h2>
+<div class="chips">${GUIDES.filter((g) => g.slug !== except).map((g) => `<a class="chip" href="${guidePath(g)}">${g.icon} ${esc(g.short)}</a>`).join('')}</div>
+</section>`;
+
+// ── водичи ────────────────────────────────────────────────────────────────
+const faqLdOf = (faq) => ({
+  '@type': 'FAQPage',
+  mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
+});
+
+function guidePage(g) {
+  const path = guidePath(g);
+  const main = `<article class="card prose">
+<h1>${esc(g.h1)}</h1>
+<p class="lead">${esc(g.lead)}</p>
+${g.body}
+${ctaCalc}
+<p class="small">Ажурирано: ${fmtDate(GUIDES_UPDATED)}. Ова е општа информација, не финансиски или правен совет.</p>
+<h2 style="font-size:14px;margin:0">Извори</h2>
+<ul class="sources">${g.sources.map(([name, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener nofollow">${esc(name)}</a></li>`).join('')}</ul>
+</article>
+<section class="card">
+<h2 style="margin:0">Чести прашања</h2>
+<div class="faq">
+${g.faq.map(([q, a]) => `<div><h3>${esc(q)}</h3><p>${esc(a)}</p></div>`).join('\n')}
+</div>
+</section>
+${guidesNav(g.slug)}
+<a class="white-link" href="/krediti/">Сите даватели и услови →</a>`;
+  const article = {
+    '@type': 'Article',
+    headline: g.h1,
+    description: g.description,
+    inLanguage: 'mk',
+    datePublished: GUIDES_UPDATED,
+    dateModified: GUIDES_UPDATED,
+    mainEntityOfPage: SITE + path,
+    image: `${SITE}/og-image.png`,
+    author: { '@type': 'Organization', name: 'KikoCredit', url: `${SITE}/` },
+    publisher: { '@type': 'Organization', name: 'KikoCredit', url: `${SITE}/` },
+  };
+  return layout({
+    path, title: g.title, description: g.description, ogType: 'article',
+    crumbs: [CRUMB_HOME, CRUMB_GUIDES, { name: g.short, path }],
+    main, jsonLd: [article, faqLdOf(g.faq)],
+  });
+}
+
+function guidesHubPage() {
+  const path = '/vodici/';
+  const main = `<section class="card">
+<h1>Водичи за потрошувачки кредити</h1>
+<p class="lead">Кратки објаснувања со бројки од калкулаторот и од условите на давателите во Македонија.</p>
+<div class="guide-list">
+${GUIDES.map((g) => `<a class="guide-item" href="${guidePath(g)}"><strong>${g.icon} ${esc(g.h1)}</strong><span>${esc(g.teaser)}</span></a>`).join('\n')}
+</div>
+${ctaCalc}
+</section>
+<a class="white-link" href="/krediti/">Сите даватели и услови →</a>`;
+  return layout({
+    path, title: 'Водичи за кредити: СВТ, брз кредит, банка или друштво | KikoCredit',
+    description: 'Водичи за потрошувачки кредити во Македонија: што е СВТ, колку чини брз кредит, банка или финансиско друштво. Со пример пресметки.',
+    crumbs: [CRUMB_HOME, CRUMB_GUIDES],
+    main,
+    jsonLd: [{
+      '@type': 'ItemList',
+      itemListElement: GUIDES.map((g, n) => ({ '@type': 'ListItem', position: n + 1, name: g.h1, url: SITE + guidePath(g) })),
+    }],
+  });
+}
+
 // ── страница за еден давател ───────────────────────────────────────────────
 function lenderPage(i) {
   const g = groupOf(i);
@@ -271,7 +359,8 @@ ${i.svtVerified ? '' : svtNote}
 <h2 class="section-title">Спореди со други: ${esc(g.short.toLowerCase())}</h2>
 <div class="chips">${others.map((o) => `<a class="chip" href="${lenderPath(o)}">${esc(o.name)}</a>`).join('')}</div>
 <a class="white-link" href="/krediti/${g.slug}/">Табела: ${esc(g.short.toLowerCase())} по СВТ →</a>
-</section>`;
+</section>
+${guidesNav()}`;
 
   const loan = {
     '@type': 'LoanOrCredit',
@@ -312,7 +401,8 @@ ${hasUnverified ? svtNote : ''}
 <p class="small">Последна проверка на условите: ${fmtDate(DATA_UPDATED)}.</p>
 ${ctaCalc}
 </section>
-<a class="white-link" href="/krediti/${other.slug}/">${other.icon} ${esc(other.short)} →</a>`;
+<a class="white-link" href="/krediti/${other.slug}/">${other.icon} ${esc(other.short)} →</a>
+${guidesNav()}`;
   return layout({
     path, title: g.title,
     description: `${g.h1} во Македонија: ${n} даватели, износи, рокови и СВТ на едно место. Бесплатна споредба, без лични податоци.`,
@@ -348,11 +438,10 @@ ${ctaCalc}
 <div class="faq">
 ${FAQ.map(([q, a]) => `<div><h3>${esc(q)}</h3><p>${esc(a)}</p></div>`).join('\n')}
 </div>
-</section>`;
-  const faqLd = {
-    '@type': 'FAQPage',
-    mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
-  };
+<a href="/vodici/shto-e-svt/">Повеќе: што е СВТ и како да ја користиш →</a>
+</section>
+${guidesNav()}`;
+  const faqLd = faqLdOf(FAQ);
   return layout({
     path, title: 'Сите даватели на кредити во Македонија | KikoCredit',
     description: `Банки, штедилници и финансиски друштва во Македонија на едно место: ${nb + nf} даватели, износи, рокови и СВТ. Бесплатна споредба на потрошувачки кредити.`,
@@ -367,6 +456,8 @@ function sitemap() {
     ['/', DATA_UPDATED], ['/krediti/', DATA_UPDATED],
     [`/krediti/${GROUPS.bank.slug}/`, DATA_UPDATED], [`/krediti/${GROUPS.finance.slug}/`, DATA_UPDATED],
     ...[...activeInstitutions].sort(byName).map((i) => [lenderPath(i), i.verifiedAt]),
+    ['/vodici/', GUIDES_UPDATED],
+    ...GUIDES.map((g) => [guidePath(g), GUIDES_UPDATED]),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -403,6 +494,9 @@ ${[...GROUPS.bank.items].sort(bySvt).map(line).join('\n')}
 
 ## Финансиски друштва
 ${[...GROUPS.finance.items].sort(bySvt).map(line).join('\n')}
+
+## Водичи
+${GUIDES.map((g) => `- [${g.h1}](${SITE}${guidePath(g)}): ${g.teaser}`).join('\n')}
 `;
 }
 
@@ -422,6 +516,9 @@ rmSync(join(DIST, 'krediti'), { recursive: true, force: true });
 write('krediti/index.html', hubPage());
 for (const g of Object.values(GROUPS)) write(`krediti/${g.slug}/index.html`, groupPage(g));
 for (const i of activeInstitutions) write(`krediti/${i.slug}/index.html`, lenderPage(i));
+rmSync(join(DIST, 'vodici'), { recursive: true, force: true });
+write('vodici/index.html', guidesHubPage());
+for (const g of GUIDES) write(`vodici/${g.slug}/index.html`, guidePage(g));
 
 // 3) sitemap.xml, llms.txt
 write('sitemap.xml', sitemap());
@@ -445,4 +542,9 @@ for (const file of generated) {
   }
 }
 
-console.log(`prerender: почетна + ${activeInstitutions.length} даватели + 3 збирни страници, sitemap.xml, llms.txt`);
+// 5) Потсетник: законската граница на СВТ во водичите зависи од казнената камата за полугодието
+if (new Date().toISOString().slice(0, 10) > PENALTY_RATE.to) {
+  console.warn(`⚠️  PENALTY_RATE во scripts/guides.mjs важеше до ${PENALTY_RATE.to} — ажурирај ја од објавата на НБРМ (1 јануари / 1 јули).`);
+}
+
+console.log(`prerender: почетна + ${activeInstitutions.length} даватели + 3 збирни страници + ${GUIDES.length} водичи, sitemap.xml, llms.txt`);
