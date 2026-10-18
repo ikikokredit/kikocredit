@@ -1,27 +1,10 @@
-# kikocredit
+# kikocredit — објави за социјални мрежи (гранка `social`)
 
-Портал за споредба на потрошувачки кредити — [kikocredit.com](https://kikocredit.com)
+Оваа гранка **не е дел од сајтот** и никогаш не се спојува во `main`.
+Ги чува сликите и редот на објави за Facebook (страница KikoCredit) и Instagram (@kikocredit).
 
-- Внесуваш **износ и месечна рата** → гледаш број на рати, камата (СВТ) и вкупен трошок кај
-  **банки, штедилници и финансиски друштва** во Македонија (податоци: `src/institutions.js`)
-- „Аплицирај" те носи директно на страницата на институцијата — не се собираат лични податоци
-- Анонимна статистика на кликови: `kikocredit.com/#admin` (копчето ⚙️)
-- Страници за пребарувачи: `/krediti/` (сите даватели), `/krediti/<давател>/`, `sitemap.xml`, `llms.txt` — се генерираат при build (`scripts/prerender.mjs`)
-- Деплој на Vercel од гранката `main`
+- `posts/queue.json` — ред на објави: датум, време, слика (`image_url`), опис, `approved`.
+- `posts/*.jpg` — сликите (1080×1350), јавно достапни преку raw.githubusercontent.com.
 
-## Локално
-
-```bash
-npm install
-npm run dev      # http://localhost:5173 (без API)
-npm run build
-```
-
-## Vercel — поставки
-
-| Варијабла | Опис |
-|---|---|
-| `DATABASE_URL` | Postgres (Vercel → Storage → Postgres/Neon ја додава сама) |
-| `ADMIN_PASSWORD` | Лозинка за статистиката |
-
-Повеќе во `CLAUDE.md`.
+Закажаната задача „KikoCredit — објави на социјални мрежи“ (вт, чт, нед во 18:57, Скопје)
+ја објавува објавата за тој ден **само ако `approved: true`**. Pece ги одобрува објавите.
