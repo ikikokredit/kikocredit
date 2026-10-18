@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { activeInstitutions, DATA_UPDATED_LABEL, typeLabel } from './institutions.js';
+import { calculateLoan, formatMKD, formatPct } from './loan.js';
 import StatsView from './StatsView.jsx';
 
 // ============================================================================
@@ -11,46 +12,7 @@ import StatsView from './StatsView.jsx';
 
 const CLICKS_ENDPOINT = '/api/clicks';
 
-const calculateLoan = (amount, monthlyPayment, svt) => {
-  const monthlyRate = svt / 100 / 12;
-  if (monthlyPayment <= amount * monthlyRate) return null;
-
-  let balance = amount;
-  let totalInterest = 0;
-  let months = 0;
-  let lastPayment = 0;
-
-  while (balance > 0 && months < 360) {
-    months++;
-    const interestThisMonth = balance * monthlyRate;
-    totalInterest += interestThisMonth;
-
-    if (balance + interestThisMonth <= monthlyPayment) {
-      lastPayment = balance + interestThisMonth;
-      balance = 0;
-    } else {
-      const principalThisMonth = monthlyPayment - interestThisMonth;
-      balance -= principalThisMonth;
-    }
-  }
-
-  const totalPayment = (months - 1) * monthlyPayment + lastPayment;
-
-  return {
-    months,
-    totalPayment: Math.round(totalPayment),
-    totalInterest: Math.round(totalInterest),
-    lastPayment: Math.round(lastPayment)
-  };
-};
-
-const formatMKD = (amount) => new Intl.NumberFormat('mk-MK').format(amount) + ' ден.';
-// Процент со децимална запирка (не зависи од локалните податоци на прелистувачот)
-const formatPct = (v) => {
-  const n = Math.round(v * 100) / 100;
-  let s = n.toFixed(n * 10 % 1 === 0 ? 1 : 2);
-  return s.replace('.', ',') + ' %';
-};
+// calculateLoan, formatMKD и formatPct се во ./loan.js (истите ги користат и статичните страници)
 
 // Анонимно броење на кликовите „Аплицирај" (без лични податоци)
 const trackClick = (offer, amount, monthlyPayment) => {
@@ -68,6 +30,17 @@ const trackClick = (offer, amount, monthlyPayment) => {
     }
   } catch (e) { /* статистиката никогаш не смее да го блокира корисникот */ }
 };
+
+// Подредување без localeCompare: прелистувачот и Node при build мора да дадат ист редослед
+// (инаку пред-генерираниот HTML не се совпаѓа со React).
+const nameKey = (i) => i.name.toLowerCase();
+const byName = (a, b) => (nameKey(a) > nameKey(b)) - (nameKey(a) < nameKey(b));
+const LENDER_GROUPS = [
+  { key: 'bank', label: '🏦 Банки и штедилници', href: '/krediti/banki/',
+    items: activeInstitutions.filter(i => i.type === 'bank' || i.type === 'savings').sort(byName) },
+  { key: 'finance', label: '💳 Финансиски друштва', href: '/krediti/finansiski-drustva/',
+    items: activeInstitutions.filter(i => i.type === 'finance').sort(byName) },
+];
 
 const FILTERS = [
   { key: 'all', label: 'Сите' },
@@ -206,6 +179,23 @@ const CustomerView = ({ onAdminClick }) => {
         </div>
       )}
 
+      {step === 1 && (
+        <nav style={styles.lendersNav} aria-label="Даватели">
+          <h2 style={styles.lendersTitle}>Кого споредуваме</h2>
+          {LENDER_GROUPS.map(g => (
+            <div key={g.key} style={styles.lendersGroup}>
+              <a href={g.href} style={styles.lendersGroupLink}>{g.label} ({g.items.length}) →</a>
+              <div style={styles.lendersRow}>
+                {g.items.map(i => (
+                  <a key={i.id} href={`/krediti/${i.slug}/`} style={styles.lenderChip}>{i.name}</a>
+                ))}
+              </div>
+            </div>
+          ))}
+          <a href="/krediti/" style={styles.lendersAll}>Сите даватели и услови →</a>
+        </nav>
+      )}
+
       {step === 2 && (
         <div style={styles.resultsContainer}>
           <div style={styles.summaryCard}>
@@ -307,7 +297,7 @@ const CustomerView = ({ onAdminClick }) => {
       )}
 
       <footer style={styles.footer}>
-        <p>© {new Date().getFullYear()} KikoCredit.com - Твој кредитен советник</p>
+        <p suppressHydrationWarning>© {new Date().getFullYear()} KikoCredit.com - Твој кредитен советник</p>
         <p style={styles.footerSmall}>
           KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од
           официјалните страници на институциите; за точните услови важи понудата на самата институција.
@@ -319,10 +309,13 @@ const CustomerView = ({ onAdminClick }) => {
 
 export default function KikoApp() {
   // ⚙️ или директен линк kikocredit.com/#admin ја отвора статистиката
-  const [view, setView] = useState(() => (window.location.hash === '#admin' ? 'admin' : 'customer'));
+  // Почнува секогаш со клиентскиот дел (како пред-генерираниот HTML), па веднаш го
+  // проверува #admin — така прелистувачот и серверот го цртаат истото.
+  const [view, setView] = useState('customer');
 
   useEffect(() => {
     const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'customer');
+    onHash();
     window.addEventListener('hashchange', onHash);
     // Стари верзии чуваа лични податоци во прелистувачот — исчисти ги.
     try { localStorage.removeItem('kiko_applications'); } catch (e) { /* ignore */ }
@@ -661,6 +654,53 @@ const styles = {
     fontSize: '11px',
     color: '#999',
     lineHeight: '1.4',
+  },
+  lendersNav: {
+    marginTop: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+  },
+  lendersTitle: {
+    color: 'white',
+    fontSize: '18px',
+    fontWeight: '600',
+    margin: 0,
+  },
+  lendersGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  lendersGroupLink: {
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '600',
+    textDecoration: 'none',
+  },
+  lendersRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '6px',
+  },
+  lenderChip: {
+    fontSize: '13px',
+    color: 'white',
+    background: 'rgba(255,255,255,0.15)',
+    border: '1px solid rgba(255,255,255,0.3)',
+    borderRadius: '14px',
+    padding: '4px 10px',
+    textDecoration: 'none',
+  },
+  lendersAll: {
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '600',
+    textAlign: 'center',
+    background: 'rgba(255,255,255,0.2)',
+    borderRadius: '12px',
+    padding: '12px',
+    textDecoration: 'none',
   },
   footer: {
     textAlign: 'center',
