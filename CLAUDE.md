@@ -42,7 +42,7 @@ Env-варијабли (Vercel): `DATABASE_URL` (или `POSTGRES_URL`), `ADMIN_
 Сè се генерира од `src/institutions.js` при секој build — не се уредуваат рачно:
 | Адреса | Содржина |
 |---|---|
-| `/` | Калкулаторот, пред-генериран (React → HTML, па `hydrateRoot`) + листа „Кого споредуваме" |
+| `/` | Калкулаторот, пред-генериран (React → HTML, па `hydrateRoot`) + „Пред да земеш кредит“ (водичи од `src/featuredGuides.js`) + листа „Кого споредуваме" |
 | `/krediti/` | Сите активни даватели во табели по СВТ + чести прашања (FAQPage) |
 | `/krediti/banki/`, `/krediti/finansiski-drustva/` | Табела за групата |
 | `/krediti/<slug>/` | Еден давател: износ, рок, СВТ, `notes`, пример пресметка, линкови |

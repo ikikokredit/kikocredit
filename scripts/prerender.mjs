@@ -542,7 +542,13 @@ for (const file of generated) {
   }
 }
 
-// 5) Потсетник: законската граница на СВТ во водичите зависи од казнената камата за полугодието
+// 5) Водичите на почетната мора да постојат
+const { FEATURED_GUIDES } = await import(pathToFileURL(join(ROOT, 'src', 'featuredGuides.js')).href);
+for (const f of FEATURED_GUIDES) {
+  if (!GUIDES.some((g) => g.slug === f.slug)) throw new Error(`src/featuredGuides.js: водичот „${f.slug}“ не постои во scripts/guides.mjs`);
+}
+
+// 6) Потсетник: законската граница на СВТ во водичите зависи од казнената камата за полугодието
 if (new Date().toISOString().slice(0, 10) > PENALTY_RATE.to) {
   console.warn(`⚠️  PENALTY_RATE во scripts/guides.mjs важеше до ${PENALTY_RATE.to} — ажурирај ја од објавата на НБРМ (1 јануари / 1 јули).`);
 }

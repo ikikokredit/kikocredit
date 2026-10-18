@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { activeInstitutions, DATA_UPDATED_LABEL, typeLabel } from './institutions.js';
 import { calculateLoan, formatMKD, formatPct } from './loan.js';
 import StatsView from './StatsView.jsx';
+import { FEATURED_GUIDES } from './featuredGuides.js';
 
 // ============================================================================
 //  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
@@ -177,6 +178,20 @@ const CustomerView = ({ onAdminClick }) => {
             Пресметката е информативна; кредитот го склучуваш директно со институцијата.
           </p>
         </div>
+      )}
+
+      {step === 1 && (
+        <nav style={styles.lendersNav} aria-label="Водичи">
+          <h2 style={styles.lendersTitle}>📚 Пред да земеш кредит</h2>
+          {FEATURED_GUIDES.map(g => (
+            <a key={g.slug} href={`/vodici/${g.slug}/`} style={styles.guideLink}>
+              <span style={styles.guideIcon} aria-hidden="true">{g.icon}</span>
+              <span style={styles.guideTitle}>{g.title}</span>
+              <span style={styles.guideArrow} aria-hidden="true">→</span>
+            </a>
+          ))}
+          <a href="/vodici/" style={styles.lendersAll}>Сите водичи →</a>
+        </nav>
       )}
 
       {step === 1 && (
@@ -654,6 +669,33 @@ const styles = {
     fontSize: '11px',
     color: '#999',
     lineHeight: '1.4',
+  },
+  guideLink: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '14px 16px',
+    background: 'rgba(255,255,255,0.15)',
+    border: '1px solid rgba(255,255,255,0.3)',
+    borderRadius: '16px',
+    color: 'white',
+    textDecoration: 'none',
+  },
+  guideIcon: {
+    fontSize: '22px',
+    lineHeight: 1,
+    flexShrink: 0,
+  },
+  guideTitle: {
+    flex: 1,
+    fontSize: '15px',
+    fontWeight: '600',
+    lineHeight: '1.35',
+  },
+  guideArrow: {
+    fontSize: '16px',
+    opacity: 0.8,
+    flexShrink: 0,
   },
   lendersNav: {
     marginTop: '24px',
