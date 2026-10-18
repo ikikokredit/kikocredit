@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "check:data": "node --input-type=module -e \"import('./src/institutions.js').then(m => console.log('OK —', m.activeInstitutions.length, 'активни даватели, проверени на', m.DATA_UPDATED))\""
   },
