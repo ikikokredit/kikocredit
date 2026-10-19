@@ -30,6 +30,7 @@
 | `src/loan.js` | `calculateLoan()` и форматирање — заеднички за `App.jsx` и за статичните страници. |
 | `src/entry-server.jsx` | Само за build: ја црта почетната страница во HTML (пред-генерирање). |
 | `scripts/prerender.mjs` | Се извршува по `vite build`: пред-генерирана почетна, страници `/krediti/…`, `sitemap.xml`, `llms.txt`. |
+| `src/contact.js` | Контакт на сајтот (име + kontakt@kikocredit.com) — футер, статични страници, llms.txt. Ако се менува, смени го и `email`/`founder` во schema.org во `index.html`. |
 | `public/` | `robots.txt`, `og-image.png` (слика за споделување, 1200×630). |
 | `index.html` | Meta-тагови и schema.org (WebSite, Organization). |
 | `scripts/guide-topics.json` | Ред на теми за неделниот водич (види „Постапка: неделен водич“). |
@@ -153,3 +154,8 @@ npm run check:data   # валидација на src/institutions.js (СВТ ≤
   група (`/krediti/…`), sitemap.xml, robots.txt, llms.txt, schema.org, og-image.png. Додадени
   `slug` и `internalNote` во податоците. Ревизија пред промената: kikocredit.com не се
   појавуваше во ниту едно пребарување; GA: ~90 посети за 90 дена, речиси сите директни.
+- 2026-10-19: контакт на сајтот — Пеце Димитровски, kontakt@kikocredit.com. Препраќање преку
+  Porkbun во личното Yahoo сандаче на сопственикот (не во Gmail, па Claude не ги гледа
+  пораките); старите Zoho MX записи заменети со `fwd1/fwd2.porkbun.com`. Pece сам го проверува
+  сандачето; закажаната задача „KikoCredit — потсетник: провери Yahoo (kontakt@)“ го потсетува
+  секои 2 дена.

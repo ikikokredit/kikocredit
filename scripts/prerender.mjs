@@ -24,6 +24,7 @@ import {
   activeInstitutions, financialInstitutions, typeLabel, DATA_UPDATED,
 } from '../src/institutions.js';
 import { calculateLoan, formatMKD, formatNumber, formatPct } from '../src/loan.js';
+import { CONTACT } from '../src/contact.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -149,6 +150,8 @@ table.fit td,table.fit th{padding:8px 4px}
 .footer{text-align:center;color:rgba(255,255,255,.6);font-size:12px;padding:8px 0 12px}
 .footer p{margin:0}
 .footer .small{color:rgba(255,255,255,.5);font-size:11px;margin-top:8px}
+.footer .contact{color:rgba(255,255,255,.75);margin-top:10px}
+.footer .contact a{color:#fff}
 @media (max-width:420px){.card{padding:24px 16px}.brand{font-size:30px}.logo{font-size:40px}}`;
 
 function layout({ path, title, description, crumbs, main, jsonLd, ogType = 'website' }) {
@@ -202,6 +205,7 @@ ${main}
 <footer class="footer">
 <p>© ${YEAR} KikoCredit.com - Твој кредитен советник</p>
 <p class="small">KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од официјалните страници на институциите; за точните услови важи понудата на самата институција.</p>
+<p class="contact">Контакт: ${esc(CONTACT.name)} · <a href="mailto:${CONTACT.email}">${CONTACT.email}</a></p>
 </footer>
 </div></div>
 </body>
@@ -482,6 +486,9 @@ function llms() {
 
 ## Каде
 Северна Македонија. Износите се во денари (MKD).
+
+## Контакт
+${CONTACT.name} — ${CONTACT.email}
 
 ## Клучни страници
 - [Калкулатор и споредба](${SITE}/)

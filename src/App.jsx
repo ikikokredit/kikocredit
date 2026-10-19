@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { activeInstitutions, DATA_UPDATED_LABEL, typeLabel } from './institutions.js';
 import { calculateLoan, formatMKD, formatPct } from './loan.js';
+import { CONTACT } from './contact.js';
 import StatsView from './StatsView.jsx';
 import { FEATURED_GUIDES } from './featuredGuides.js';
 
@@ -316,6 +317,9 @@ const CustomerView = ({ onAdminClick }) => {
         <p style={styles.footerSmall}>
           KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од
           официјалните страници на институциите; за точните услови важи понудата на самата институција.
+        </p>
+        <p style={styles.footerContact}>
+          Контакт: {CONTACT.name} · <a href={`mailto:${CONTACT.email}`} style={styles.footerLink}>{CONTACT.email}</a>
         </p>
       </footer>
     </div>
@@ -749,6 +753,14 @@ const styles = {
     padding: '20px',
     color: 'rgba(255,255,255,0.6)',
     fontSize: '12px',
+  },
+  footerContact: {
+    fontSize: '12px',
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: '10px',
+  },
+  footerLink: {
+    color: 'white',
   },
   footerSmall: {
     fontSize: '11px',
