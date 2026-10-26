@@ -119,6 +119,8 @@ a{color:#5a4fb0}
 .example{background:#f4f2fd;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
 .example .total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:2px dashed #ddd8f5;padding-top:10px;font-weight:600}
 .example .total span:last-child{font-size:20px;font-weight:800}
+.btn-out{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:16px;color:#5a4fb0;background:#fff;border:2px solid #d9d4f5;border-radius:12px;padding:14px}
+.btn-out:hover{border-color:#5a4fb0}
 .btn{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:17px;color:#fff;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:12px;padding:16px}
 .small{font-size:12px;color:#888}
 .note{font-size:12px;color:#999}
@@ -328,8 +330,12 @@ function lenderPage(i) {
   const hasOwnExample = /реп\.\s*пример/i.test(i.notes);
   const ex = hasOwnExample ? null : examplePlan(i);
   const others = g.items.filter((o) => o.id !== i.id).sort(byName);
-  const title = `${i.name} — кредит: услови и СВТ | KikoCredit`;
-  const description = `${i.name}: потрошувачки кредит ${amountText(i)}, рок ${monthsText(i)}, СВТ ${formatPct(i.svt)}${i.svtVerified ? '' : ' (приближно)'}. Пример пресметка и споредба со други даватели.`;
+  // Наслов и опис за Google: бројки + јасно дека е независна споредба (KikoCredit), не официјалниот
+  // сајт на давателот. Повеќето пребарувања се по име на давателот („moneymax mk“), па во описот
+  // стои и неговиот домен. Непотврдена СВТ не оди во насловот.
+  const title = `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
+  const nameSite = i.name.includes('(') ? `${i.name}, ${i.website}` : `${i.name} (${i.website})`;
+  const description = `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
 
   const exampleHtml = ex ? `<div class="example">
 <h2 style="margin:0">Пример пресметка</h2>
@@ -356,6 +362,7 @@ function lenderPage(i) {
 <p>${esc(i.notes)}</p>
 ${exampleHtml}
 ${ctaCalc}
+<a class="btn-out" href="${esc(i.applyUrl)}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>
 <p class="small">Официјален сајт: <a href="https://${esc(i.website)}/" target="_blank" rel="noopener nofollow">${esc(i.website)}</a> · Извор на условите: <a href="${esc(i.source)}" target="_blank" rel="noopener nofollow">${esc(host(i.source))}</a></p>
 ${i.svtVerified ? '' : svtNote}
 </article>
