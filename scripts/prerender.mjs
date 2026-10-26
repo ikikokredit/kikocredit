@@ -258,6 +258,10 @@ const faqLdOf = (faq) => ({
   mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
 });
 
+// Датум на водичот: свој `updated` (нов водич) или заедничкиот GUIDES_UPDATED
+const guideDate = (g) => g.updated || GUIDES_UPDATED;
+const guidesLatest = GUIDES.map(guideDate).reduce((a, b) => (b > a ? b : a), GUIDES_UPDATED);
+
 function guidePage(g) {
   const path = guidePath(g);
   const main = `<article class="card prose">
@@ -265,7 +269,7 @@ function guidePage(g) {
 <p class="lead">${esc(g.lead)}</p>
 ${g.body}
 ${ctaCalc}
-<p class="small">Ажурирано: ${fmtDate(GUIDES_UPDATED)}. Ова е општа информација, не финансиски или правен совет.</p>
+<p class="small">Ажурирано: ${fmtDate(guideDate(g))}. Ова е општа информација, не финансиски или правен совет.</p>
 <h2 style="font-size:14px;margin:0">Извори</h2>
 <ul class="sources">${g.sources.map(([name, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener nofollow">${esc(name)}</a></li>`).join('')}</ul>
 </article>
@@ -282,8 +286,8 @@ ${guidesNav(g.slug)}
     headline: g.h1,
     description: g.description,
     inLanguage: 'mk',
-    datePublished: GUIDES_UPDATED,
-    dateModified: GUIDES_UPDATED,
+    datePublished: guideDate(g),
+    dateModified: guideDate(g),
     mainEntityOfPage: SITE + path,
     image: `${SITE}/og-image.png`,
     author: { '@type': 'Organization', name: 'KikoCredit', url: `${SITE}/` },
@@ -460,8 +464,8 @@ function sitemap() {
     ['/', DATA_UPDATED], ['/krediti/', DATA_UPDATED],
     [`/krediti/${GROUPS.bank.slug}/`, DATA_UPDATED], [`/krediti/${GROUPS.finance.slug}/`, DATA_UPDATED],
     ...[...activeInstitutions].sort(byName).map((i) => [lenderPath(i), i.verifiedAt]),
-    ['/vodici/', GUIDES_UPDATED],
-    ...GUIDES.map((g) => [guidePath(g), GUIDES_UPDATED]),
+    ['/vodici/', guidesLatest],
+    ...GUIDES.map((g) => [guidePath(g), guideDate(g)]),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
