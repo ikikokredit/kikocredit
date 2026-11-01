@@ -288,8 +288,104 @@ ${costTable(100000, 24, [['6 %<br><span class="small">ниво на банка</
   sources: [SRC.zzpdpk, SRC.zfd2023],
 };
 
-export const GUIDES = [brzKredit, shtoESvt, bankaIliDrustvo];
+// ── 4. Најповолен потрошувачки кредит ──────────────────────────────────────
+// Табелата и сите бројки се од institutions.js (банки и штедилници), пример
+// 300.000 ден. на 60 месеци со истата математика како калкулаторот.
+const BEST_AMOUNT = 300000, BEST_MONTHS = 60;
+const nameKey = (i) => i.name.toLowerCase();
+// без localeCompare — ист редослед во Node и во прелистувачот (како prerender.mjs)
+const byName = (a, b) => (nameKey(a) > nameKey(b)) - (nameKey(a) < nameKey(b));
+const covers = (i, amount, months) => amount <= i.maxAmount && (i.minAmount == null || amount >= i.minAmount)
+  && months >= i.minMonths && months <= i.maxMonths;
+const bestRows = [...banks].sort((a, b) => a.svt - b.svt || byName(a, b))
+  .map((i) => ({ i, ok: covers(i, BEST_AMOUNT, BEST_MONTHS), p: plan(BEST_AMOUNT, i.svt, BEST_MONTHS) }));
+const bestVerified = bestRows.filter((r) => r.ok && r.i.svtVerified);
+const B = {
+  n: banks.length,
+  unverified: banks.filter((i) => !i.svtVerified).length,
+  minVerifiedSvt: Math.min(...bestVerified.map((r) => r.i.svt)),
+  cheap: bestVerified[0].p,
+  dear: bestVerified[bestVerified.length - 1].p,
+};
+const term60 = plan(BEST_AMOUNT, 6, 60), term84 = plan(BEST_AMOUNT, 6, 84);
+
+function bestTable() {
+  const body = bestRows.map(({ i, ok, p }) => {
+    const tag = i.type === 'savings' ? '<br><span class="small">штедилница</span>' : '';
+    const svt = formatPct(i.svt).replace(' %', `${NB}%`) + (i.svtVerified ? '' : '*');
+    const cells = ok
+      ? `<td class="num">${formatNumber(p.payment)}</td><td class="num"><strong>${formatNumber(p.cost)}</strong></td>`
+      : `<td colspan="2" style="text-align:right"><span class="small">${i.minAmount != null && BEST_AMOUNT < i.minAmount ? `износ од ${formatNumber(i.minAmount)}${NB}ден.` : 'не важи за овој износ и рок'}</span></td>`;
+    return `<tr><td><a href="/krediti/${i.slug}/">${i.name}</a>${tag}</td><td class="num">${svt}</td>${cells}</tr>`;
+  }).join('\n');
+  return `<div class="table-wrap"><table class="fit">
+<thead><tr><th>Давател</th><th class="num">СВТ</th><th class="num">Рата</th><th class="num">Цена на<br>кредитот</th></tr></thead>
+<tbody>
+${body}
+</tbody></table></div>`;
+}
+
+const najpovolen = {
+  slug: 'najpovolen-potroshuvachki-kredit',
+  updated: '2026-10-25',
+  icon: '🏆',
+  short: 'Најповолен кредит',
+  title: 'Најповолен потрошувачки кредит: банките по СВТ | KikoCredit',
+  h1: 'Најповолен потрошувачки кредит: споредба на банките',
+  description: 'Банките и штедилниците во Македонија подредени по СВТ, со пример за 300.000 ден. на 60 месеци. Што значи „најповолно“ и што да провериш пред да избереш.',
+  teaser: 'Банките подредени по СВТ, колку чини 300.000 ден. на 5 години и зошто „најповолно“ зависи и од тебе.',
+  lead: 'Најповолниот кредит е оној што за ист износ и ист рок вкупно чини најмалку. Најбрзо ќе го најдеш по стапката на вкупни трошоци (СВТ). Еве ги банките и штедилниците што ги споредуваме, подредени од најниска СВТ, со пример во денари.',
+  body: `<h2>Банките по СВТ</h2>
+<p>Пример за <strong>${formatNumber(BEST_AMOUNT)}${NB}ден. на ${BEST_MONTHS} месеци</strong> кај ${B.n} банки и штедилници (износите во табелата се во денари):</p>
+${bestTable()}
+<p class="small">* СВТ не е објавена на сајтот на институцијата, па бројот е приближен (најчесто номиналната каматна стапка). Вистинската СВТ може да е повисока, бидејќи ги вклучува и надоместоците. ${approxNote} ${dataNote}</p>
+<p>Меѓу понудите со објавена СВТ, најевтината чини <strong>${formatMKD(B.cheap.cost)}</strong>, а најскапата ${den(B.dear.cost)}. Тоа е разлика од <strong>${formatMKD(B.dear.cost - B.cheap.cost)}</strong> за ист износ и ист рок.</p>
+
+<h2>Што значи „најповолно“</h2>
+<ul>
+<li><strong>Ист износ, ист рок.</strong> Две понуди ги споредуваш само за исти услови. Тогаш пониска СВТ значи помал вкупен трошок. Повеќе: <a href="/vodici/shto-e-svt/">Што е СВТ</a>.</li>
+<li><strong>СВТ, не каматата.</strong> Каматата е само дел од цената. Во СВТ влегуваат и надоместоците за одобрување, провизиите и задолжителното осигурување.</li>
+<li><strong>Само објавена СВТ.</strong> На KikoCredit ознаката „Најповолно“ ја добива понудата со најмал трошок за твојот износ и рата, но само ако давателот ја објавил својата СВТ. Кај ${B.unverified} од ${B.n} банки и штедилници СВТ не е објавена, па бројот има ѕвездичка (*).</li>
+</ul>
+
+<h2>Твоите услови можат да бидат поинакви</h2>
+<p>Објавената СВТ важи за примерот на банката. За тебе понудата зависи и од тоа:</p>
+<ul>
+<li><strong>Дали примаш плата или пензија во банката.</strong> Кај дел од банките тоа е услов или носи пониска камата.</li>
+<li><strong>Дали земаш осигурување.</strong> Кај некои банки каматата е различна со осигурување и без него.</li>
+<li><strong>Колку е фиксна каматата.</strong> Кај дел од банките каматата е фиксна само првите 1–3 години, а потоа е променлива. Кога каматата е променлива, СВТ се пресметува како стапката да не се менува до крајот (член 20), па вистинската цена може да биде повисока или пониска.</li>
+<li><strong>Износот и рокот.</strong> Иста банка може да има различна стапка за различен рок.</li>
+</ul>
+
+<h2>Подолг рок: помала рата, повеќе камата</h2>
+<p>Ист износ од ${formatNumber(BEST_AMOUNT)}${NB}ден., иста СВТ од 6 % (илустративно):</p>
+<div class="table-wrap"><table class="fit">
+<thead><tr><th>Рок</th><th class="num">Рата</th><th class="num">Цена на<br>кредитот</th></tr></thead>
+<tbody>
+<tr><td>60 месеци</td><td class="num">${formatNumber(term60.payment)}</td><td class="num"><strong>${formatNumber(term60.cost)}</strong></td></tr>
+<tr><td>84 месеци</td><td class="num">${formatNumber(term84.payment)}</td><td class="num"><strong>${formatNumber(term84.cost)}</strong></td></tr>
+</tbody></table></div>
+<p>Подолгиот рок ја намалува ратата за ${formatMKD(term60.payment - term84.payment)}, но кредитот чини <strong>${formatMKD(term84.cost - term60.cost)} повеќе</strong>. Избери го најкраткиот рок со рата што можеш редовно да ја плаќаш.</p>
+
+<h2>Провери пред да избереш</h2>
+<ol>
+<li>Избери 2–3 банки од табелата и побарај понуда за <strong>ист износ и ист рок</strong>.</li>
+<li>Пред договорот, банката мора да ти даде <strong>преддоговорни информации на стандарден формулар</strong>, со СВТ и вкупниот износ за враќање (член 5). Спореди ги формуларите.</li>
+<li>Прашај дали каматата е <strong>фиксна за целиот период</strong> или само на почеток.</li>
+<li>Провери ги <strong>надоместоците</strong>: за обработка, одобрување, осигурување, нотар.</li>
+<li>Кредитот можеш да го вратиш и порано. Надоместокот за предвремена отплата е најмногу 1 % од вратениот износ (0,5 % ако останува помалку од една година) и може да се наплати само кога каматата е фиксна (член 16).</li>
+</ol>`,
+  faq: [
+    ['Која банка има најповолен потрошувачки кредит?', `Зависи од износот, рокот и твоите услови (плата во банката, осигурување). Меѓу банките и штедилниците што ги споредуваме, најниската објавена СВТ е ${pct(B.minVerifiedSvt)}. Внеси износ и рата на почетната страница и ќе ги видиш понудите подредени по вкупен трошок.`],
+    ['Зошто кај некои банки СВТ има ѕвездичка?', 'Банката не ја објавила СВТ на својот сајт, па бројот е приближен (најчесто номиналната каматна стапка). Вистинската СВТ може да е повисока, а таквите понуди не добиваат ознака „Најповолно“.'],
+    ['Дали пониска рата значи поевтин кредит?', `Не секогаш. Подолг рок дава пониска рата, но повеќе камата: за ${formatNumber(BEST_AMOUNT)}${NB}ден. со СВТ од 6 %, рок од 84 наместо 60 месеци чини ${den(term84.cost - term60.cost)} повеќе.`],
+    ['Дали СВТ од рекламата важи и за мене?', 'Не мора. Рекламата ја наведува СВТ за репрезентативен пример. Твојата понуда зависи од износот, рокот и условите, а точните бројки ги добиваш на стандардниот формулар пред договорот.'],
+  ],
+  sources: [SRC.zzpdpk],
+};
+
+export const GUIDES = [brzKredit, shtoESvt, bankaIliDrustvo, najpovolen];
 export const guidePath = (g) => `/vodici/${g.slug}/`;
 
 // За тестови и проверка при build
-export const _internal = { S, plan, aprOf, offer1, offer2, SVT_CAP };
+export const _internal = { S, B, plan, aprOf, offer1, offer2, SVT_CAP };
