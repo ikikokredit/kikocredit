@@ -67,6 +67,7 @@ const CustomerView = ({ onAdminClick }) => {
     }
 
     const calculatedResults = activeInstitutions
+      .filter(inst => !inst.paused) // привремено паузиран давател (на пр. под администрација на НБРМ)
       .map(inst => {
         if (amt > inst.maxAmount) return null;
         if (inst.minAmount != null && amt < inst.minAmount) return null;

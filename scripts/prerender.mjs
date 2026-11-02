@@ -337,9 +337,21 @@ function lenderPage(i) {
   // Наслов и опис за Google: бројки + јасно дека е независна споредба (KikoCredit), не официјалниот
   // сајт на давателот. Повеќето пребарувања се по име на давателот („moneymax mk“), па во описот
   // стои и неговиот домен. Непотврдена СВТ не оди во насловот.
-  const title = `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
+  // Привремено паузиран давател (`paused` + `notice`): наслов и опис по известувањето,
+  // известување на врвот и без копче кон давателот.
+  const paused = i.paused && i.notice;
+  const title = paused
+    ? `${i.notice.title} | KikoCredit`
+    : `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
   const nameSite = i.name.includes('(') ? `${i.name}, ${i.website}` : `${i.name} (${i.website})`;
-  const description = `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
+  const description = paused ? i.notice.description : `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
+  const noticeHtml = paused ? `<div class="example" role="note">
+<p style="margin:0"><strong>Состојба на ${fmtDate(i.notice.date)}.</strong> ${esc(i.notice.text)}</p>
+<a href="${esc(i.notice.guide)}"><strong>Што значи ова за клиентите →</strong></a>
+</div>` : '';
+  const applyHtml = paused
+    ? `<p class="btn-out" style="color:#888;border-style:dashed;margin:0">Апликациите се привремено исклучени</p>`
+    : `<a class="btn-out" href="${esc(i.applyUrl)}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>`;
 
   const exampleHtml = ex ? `<div class="example">
 <h2 style="margin:0">Пример пресметка</h2>
@@ -355,7 +367,8 @@ function lenderPage(i) {
   const main = `<article class="card">
 <div class="ident"><span class="emoji" aria-hidden="true">${i.logo}</span><div><span class="name">${esc(i.name)}</span><span class="badge">${esc(typeLabel(i.type))}</span></div></div>
 <h1>${esc(i.name)} — услови за потрошувачки кредит</h1>
-<p class="lead">Кај ${esc(i.name)} можеш да земеш потрошувачки кредит ${amountText(i)}, со рок ${monthsText(i)}.</p>
+${noticeHtml}
+<p class="lead">${paused ? `Објавени услови на ${esc(i.name)} за потрошувачки кредит: ${amountText(i)}, со рок ${monthsText(i)}.` : `Кај ${esc(i.name)} можеш да земеш потрошувачки кредит ${amountText(i)}, со рок ${monthsText(i)}.`}</p>
 <div class="facts">
 <div class="fact"><span class="k">Износ</span><span class="v">${i.minAmount != null ? formatNumber(i.minAmount) + ' – ' : 'до '}${formatMKD(i.maxAmount)}</span></div>
 <div class="fact"><span class="k">Рок</span><span class="v">${i.minMonths}–${i.maxMonths} мес.</span></div>
@@ -366,7 +379,7 @@ function lenderPage(i) {
 <p>${esc(i.notes)}</p>
 ${exampleHtml}
 ${ctaCalc}
-<a class="btn-out" href="${esc(i.applyUrl)}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>
+${applyHtml}
 <p class="small">Официјален сајт: <a href="https://${esc(i.website)}/" target="_blank" rel="noopener nofollow">${esc(i.website)}</a> · Извор на условите: <a href="${esc(i.source)}" target="_blank" rel="noopener nofollow">${esc(host(i.source))}</a></p>
 ${i.svtVerified ? '' : svtNote}
 </article>
