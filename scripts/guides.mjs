@@ -598,7 +598,7 @@ ${body}
 const kreditDoPlata = {
   slug: 'kredit-do-plata',
   updated: '2026-11-08',
-  icon: '📅',
+  icon: '💸',
   short: 'Кредит до плата',
   title: 'Кредит до плата: колку навистина чини | KikoCredit',
   h1: 'Кредит до плата: колку навистина чини',
