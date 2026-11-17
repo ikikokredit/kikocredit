@@ -1,0 +1,27 @@
+[
+ {
+  "week": "2026-11-16",
+  "topic": "Нови правила на Народната банка за кредитите на граѓаните од 1 декември 2026",
+  "guide_slug": "novi-pravila-za-krediti-od-dekemvri-2026",
+  "guide_done": false,
+  "facts": [
+   "Одлука на Извршниот одбор на Народната банка, соопштена 02.10.2026; се применува од 01.12.2026.",
+   "ДСТИ (месечни отплати на кредити / приход): 50 % → 45 % за кредити во денари; 45 % → 40 % за кредити со валутна компонента.",
+   "Максимален рок: станбени кредити 30 → 25 години; хипотекарни потрошувачки кредити 20 → 15 години.",
+   "Прво купување сопствено живеалиште: границите остануваат 50 % и 45 %, рокот останува 30 години.",
+   "Мерките за првпат се воведени во јули 2023, засилени од декември 2025.",
+   "НЕПОТВРДЕНО (не пишувај без официјалниот текст): дали важи само за нови кредити; кои институции се опфатени (финансиски друштва?); обични потрошувачки кредити без хипотека."
+  ],
+  "sources": [
+   "https://www.nbrm.mk/ns-newsarticle-soopstenie-02102026-1.nspx",
+   "https://makfax.com.mk/ekonomija/maksimalniot-rok-za-otplata-na-stanbenite-krediti-se-namaluva-od-30-na-25-godini-soopshti-narodnata-banka/",
+   "https://lider.mk/narodna-banka-od-1-dekemvri-stanbenite-krediti-ke-bidat-do-25-godini-otplata-hipotekarnite-do-15-godini/",
+   "https://zurnal.mk/od-dekemvri-novi-pravila-za-kreditite-eve-shto-se-menuva-za-gra%D1%93anite/"
+  ],
+  "posts": [
+   "2026-11-19",
+   "2026-11-22",
+   "2026-11-24"
+  ]
+ }
+]

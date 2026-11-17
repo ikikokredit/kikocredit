@@ -7,6 +7,8 @@
       --icon "⚡" --out posts/2026-10-25-vodic-brz-kredit.jpg
 
 --points: 2–3 кратки реченици одделени со „|“ (секоја до ~45 знаци), само факти од водичот.
+За актуелни објави (не водич): --kicker "Актуелно" --kicker-icon "🗞️" --url "kikocredit.com"
+--cta "<кратка порака>"; до 4 точки.
 Фонтови: tools/fonts (Manrope, Unbounded — SIL OFL) и Noto Color Emoji.
 """
 import argparse, os
@@ -75,13 +77,14 @@ def rounded(img, box, radius, fill):
     img.alpha_composite(ov)
 
 
-def make(title, points, icon, out, kicker='Нов водич', url='kikocredit.com/vodici'):
+def make(title, points, icon, out, kicker='Нов водич', url='kikocredit.com/vodici',
+         kicker_icon='📚', cta='Цел водич на сајтот'):
     img = base()
     d = ImageDraw.Draw(img)
     # ознака „📚 Нов водич“
     kw = d.textlength(kicker, font=B(34)) + 120
     rounded(img, (72, 190, 72 + kw, 254), 32, (255, 255, 255, 60))
-    img.alpha_composite(emoji('📚', 38), (92, 202))
+    img.alpha_composite(emoji(kicker_icon, 38), (92, 202))
     d = ImageDraw.Draw(img)
     d.text((146, 198), kicker, font=B(34), fill='white')
     # наслов (автоматски помал фонт ако е долг)
@@ -107,7 +110,7 @@ def make(title, points, icon, out, kicker='Нов водич', url='kikocredit.c
         ic = emoji(icon, 56)
         im.alpha_composite(ic, (110, yy + 6))
         dd = ImageDraw.Draw(im)
-        dd.text((190, yy + 12), 'Цел водич на сајтот', font=B(36), fill=ACC)
+        dd.text((190, yy + 12), cta, font=B(36), fill=ACC)
         return yy + 72
 
     probe = img.copy()
@@ -134,8 +137,10 @@ if __name__ == '__main__':
     ap.add_argument('--out', required=True)
     ap.add_argument('--kicker', default='Нов водич')
     ap.add_argument('--url', default='kikocredit.com/vodici')
+    ap.add_argument('--kicker-icon', default='📚')
+    ap.add_argument('--cta', default='Цел водич на сајтот', help='реченица на дното од картичката')
     a = ap.parse_args()
     pts = [p.strip() for p in a.points.split('|') if p.strip()]
-    if not 2 <= len(pts) <= 3:
-        raise SystemExit('--points: 2 или 3 точки, одделени со |')
-    make(a.title, pts, a.icon, a.out, a.kicker, a.url)
+    if not 2 <= len(pts) <= 4:
+        raise SystemExit('--points: 2 до 4 точки, одделени со |')
+    make(a.title, pts, a.icon, a.out, a.kicker, a.url, a.kicker_icon, a.cta)
