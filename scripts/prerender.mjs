@@ -87,7 +87,8 @@ function examplePlan(i) {
 
 // ── заеднички изглед („Кико": лисица, виолетов градиент, бели картички 24px) ──
 const GA = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-90CTTKZNVH"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-90CTTKZNVH');</script>`;
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-90CTTKZNVH');
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[data-ga-inst]');if(a)gtag('event','apply_click',{institution:a.getAttribute('data-ga-inst'),institution_type:a.getAttribute('data-ga-type'),source_page:'lender_page',transport_type:'beacon'});});</script>`;
 
 const CSS = `*{box-sizing:border-box}
 body{margin:0;font-family:'Segoe UI','Roboto','Helvetica Neue',sans-serif;color:#333;line-height:1.5}
@@ -260,6 +261,10 @@ const faqLdOf = (faq) => ({
   mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
 });
 
+// Датум на водичот: свој `updated` (нов водич) или заедничкиот GUIDES_UPDATED
+const guideDate = (g) => g.updated || GUIDES_UPDATED;
+const guidesLatest = GUIDES.map(guideDate).reduce((a, b) => (b > a ? b : a), GUIDES_UPDATED);
+
 function guidePage(g) {
   const path = guidePath(g);
   const main = `<article class="card prose">
@@ -267,7 +272,7 @@ function guidePage(g) {
 <p class="lead">${esc(g.lead)}</p>
 ${g.body}
 ${ctaCalc}
-<p class="small">Ажурирано: ${fmtDate(GUIDES_UPDATED)}. Ова е општа информација, не финансиски или правен совет.</p>
+<p class="small">Ажурирано: ${fmtDate(guideDate(g))}. Ова е општа информација, не финансиски или правен совет.</p>
 <h2 style="font-size:14px;margin:0">Извори</h2>
 <ul class="sources">${g.sources.map(([name, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener nofollow">${esc(name)}</a></li>`).join('')}</ul>
 </article>
@@ -284,8 +289,8 @@ ${guidesNav(g.slug)}
     headline: g.h1,
     description: g.description,
     inLanguage: 'mk',
-    datePublished: GUIDES_UPDATED,
-    dateModified: GUIDES_UPDATED,
+    datePublished: guideDate(g),
+    dateModified: guideDate(g),
     mainEntityOfPage: SITE + path,
     image: `${SITE}/og-image.png`,
     author: { '@type': 'Organization', name: 'KikoCredit', url: `${SITE}/` },
@@ -333,9 +338,21 @@ function lenderPage(i) {
   // Наслов и опис за Google: бројки + јасно дека е независна споредба (KikoCredit), не официјалниот
   // сајт на давателот. Повеќето пребарувања се по име на давателот („moneymax mk“), па во описот
   // стои и неговиот домен. Непотврдена СВТ не оди во насловот.
-  const title = `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
+  // Привремено паузиран давател (`paused` + `notice`): наслов и опис по известувањето,
+  // известување на врвот и без копче кон давателот.
+  const paused = i.paused && i.notice;
+  const title = paused
+    ? `${i.notice.title} | KikoCredit`
+    : `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
   const nameSite = i.name.includes('(') ? `${i.name}, ${i.website}` : `${i.name} (${i.website})`;
-  const description = `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
+  const description = paused ? i.notice.description : `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
+  const noticeHtml = paused ? `<div class="example" role="note">
+<p style="margin:0"><strong>Состојба на ${fmtDate(i.notice.date)}.</strong> ${esc(i.notice.text)}</p>
+<a href="${esc(i.notice.guide)}"><strong>Што значи ова за клиентите →</strong></a>
+</div>` : '';
+  const applyHtml = paused
+    ? `<p class="btn-out" style="color:#888;border-style:dashed;margin:0">Апликациите се привремено исклучени</p>`
+    : `<a class="btn-out" href="${esc(i.applyUrl)}" data-ga-inst="${esc(i.name)}" data-ga-type="${i.type}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>`;
 
   const exampleHtml = ex ? `<div class="example">
 <h2 style="margin:0">Пример пресметка</h2>
@@ -351,7 +368,8 @@ function lenderPage(i) {
   const main = `<article class="card">
 <div class="ident"><span class="emoji" aria-hidden="true">${i.logo}</span><div><span class="name">${esc(i.name)}</span><span class="badge">${esc(typeLabel(i.type))}</span></div></div>
 <h1>${esc(i.name)} — услови за потрошувачки кредит</h1>
-<p class="lead">Кај ${esc(i.name)} можеш да земеш потрошувачки кредит ${amountText(i)}, со рок ${monthsText(i)}.</p>
+${noticeHtml}
+<p class="lead">${paused ? `Објавени услови на ${esc(i.name)} за потрошувачки кредит: ${amountText(i)}, со рок ${monthsText(i)}.` : `Кај ${esc(i.name)} можеш да земеш потрошувачки кредит ${amountText(i)}, со рок ${monthsText(i)}.`}</p>
 <div class="facts">
 <div class="fact"><span class="k">Износ</span><span class="v">${i.minAmount != null ? formatNumber(i.minAmount) + ' – ' : 'до '}${formatMKD(i.maxAmount)}</span></div>
 <div class="fact"><span class="k">Рок</span><span class="v">${i.minMonths}–${i.maxMonths} мес.</span></div>
@@ -362,7 +380,7 @@ function lenderPage(i) {
 <p>${esc(i.notes)}</p>
 ${exampleHtml}
 ${ctaCalc}
-<a class="btn-out" href="${esc(i.applyUrl)}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>
+${applyHtml}
 <p class="small">Официјален сајт: <a href="https://${esc(i.website)}/" target="_blank" rel="noopener nofollow">${esc(i.website)}</a> · Извор на условите: <a href="${esc(i.source)}" target="_blank" rel="noopener nofollow">${esc(host(i.source))}</a></p>
 ${i.svtVerified ? '' : svtNote}
 </article>
@@ -467,8 +485,8 @@ function sitemap() {
     ['/', DATA_UPDATED], ['/krediti/', DATA_UPDATED],
     [`/krediti/${GROUPS.bank.slug}/`, DATA_UPDATED], [`/krediti/${GROUPS.finance.slug}/`, DATA_UPDATED],
     ...[...activeInstitutions].sort(byName).map((i) => [lenderPath(i), i.verifiedAt]),
-    ['/vodici/', GUIDES_UPDATED],
-    ...GUIDES.map((g) => [guidePath(g), GUIDES_UPDATED]),
+    ['/vodici/', guidesLatest],
+    ...GUIDES.map((g) => [guidePath(g), guideDate(g)]),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

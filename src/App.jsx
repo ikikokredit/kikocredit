@@ -31,6 +31,16 @@ const trackClick = (offer, amount, monthlyPayment) => {
       fetch(CLICKS_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
     }
   } catch (e) { /* статистиката никогаш не смее да го блокира корисникот */ }
+  // Истиот анонимен клик и во Google Analytics (настан apply_click; без лични податоци)
+  try {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'apply_click', {
+        institution: offer.name, institution_type: offer.type,
+        loan_amount: amount, months: offer.months, source_page: 'calculator',
+        transport_type: 'beacon',
+      });
+    }
+  } catch (e) { /* исто — никогаш не блокира */ }
 };
 
 // Подредување без localeCompare: прелистувачот и Node при build мора да дадат ист редослед
@@ -67,6 +77,7 @@ const CustomerView = ({ onAdminClick }) => {
     }
 
     const calculatedResults = activeInstitutions
+      .filter(inst => !inst.paused) // привремено паузиран давател (на пр. под администрација на НБРМ)
       .map(inst => {
         if (amt > inst.maxAmount) return null;
         if (inst.minAmount != null && amt < inst.minAmount) return null;
