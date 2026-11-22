@@ -86,9 +86,15 @@ function examplePlan(i) {
 }
 
 // ── заеднички изглед („Кико": лисица, виолетов градиент, бели картички 24px) ──
+// Клик на „Оди на страницата на X“ (a[data-ga-inst]) се бележи на две места, исто како „Аплицирај“
+// во калкулаторот: Google Analytics (apply_click) и /api/clicks (source: lender_page). Без лични податоци.
 const GA = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-90CTTKZNVH"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-90CTTKZNVH');
-document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[data-ga-inst]');if(a)gtag('event','apply_click',{institution:a.getAttribute('data-ga-inst'),institution_type:a.getAttribute('data-ga-type'),source_page:'lender_page',transport_type:'beacon'});});</script>`;
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[data-ga-inst]');if(!a)return;var n=a.getAttribute('data-ga-inst'),t=a.getAttribute('data-ga-type');
+try{gtag('event','apply_click',{institution:n,institution_type:t,source_page:'lender_page',transport_type:'beacon'});}catch(_){}
+try{var p=JSON.stringify({institutionId:Number(a.getAttribute('data-ga-id')),institutionName:n,type:t,source:'lender_page',website:''});
+if(navigator.sendBeacon)navigator.sendBeacon('/api/clicks',new Blob([p],{type:'application/json'}));
+else fetch('/api/clicks',{method:'POST',headers:{'Content-Type':'application/json'},body:p,keepalive:true}).catch(function(){});}catch(_){}});</script>`;
 
 const CSS = `*{box-sizing:border-box}
 body{margin:0;font-family:'Segoe UI','Roboto','Helvetica Neue',sans-serif;color:#333;line-height:1.5}
@@ -352,7 +358,7 @@ function lenderPage(i) {
 </div>` : '';
   const applyHtml = paused
     ? `<p class="btn-out" style="color:#888;border-style:dashed;margin:0">Апликациите се привремено исклучени</p>`
-    : `<a class="btn-out" href="${esc(i.applyUrl)}" data-ga-inst="${esc(i.name)}" data-ga-type="${i.type}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>`;
+    : `<a class="btn-out" href="${esc(i.applyUrl)}" data-ga-inst="${esc(i.name)}" data-ga-type="${i.type}" data-ga-id="${i.id}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>`;
 
   const exampleHtml = ex ? `<div class="example">
 <h2 style="margin:0">Пример пресметка</h2>
