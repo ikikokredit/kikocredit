@@ -181,8 +181,8 @@ ${BANNER_CSS}`;
 const TRUSTBAR = ['Независна споредба', 'Без лични податоци', 'Услови од официјалните страници']
   .map((t) => `<span>${ICONS.check(14, '#9FE3B4')}${t}</span>`).join('');
 
-// Банер пред подножјето на секоја статична страница — ист како на почетната (текст и изглед:
-// src/banner.js), тука целиот води кон калкулаторот.
+// Летечки банер на дното на екранот — ист како на почетната (текст и изглед: src/banner.js),
+// тука целата лента води кон калкулаторот.
 const BANNER_HTML = `<a class="kb" href="/">${bannerInner(true)}</a>`;
 
 function layout({ path, title, description, crumbs, main, jsonLd, ogType = 'website' }) {
@@ -225,7 +225,7 @@ ${GA}
 <style>${CSS}</style>
 </head>
 <body>
-<div class="app">
+<div class="app kb-pad">
 <header class="topbar"><div class="topbar-in">
 <a href="/" class="logo-link" aria-label="KikoCredit — почетна">${mascotImg(46)}<span><span class="brand">${wordmarkSvg(21)}</span><span class="descriptor">${B.descriptor}</span></span></a>
 <a class="top-cta" href="/">Спореди →</a>
@@ -236,13 +236,14 @@ ${GA}
 <main class="stack">
 ${main}
 </main>
-${BANNER_HTML}
 <footer class="footer">
 <p>© ${YEAR} KikoCredit.com — независна споредба на кредити</p>
 <p class="small">KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од официјалните страници на институциите; за точните услови важи понудата на самата институција.</p>
 <p class="contact">Контакт: ${esc(CONTACT.name)} · <a href="mailto:${CONTACT.email}">${CONTACT.email}</a></p>
 </footer>
-</div></div>
+</div>
+${BANNER_HTML}
+</div>
 </body>
 </html>
 `;
