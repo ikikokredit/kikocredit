@@ -5,6 +5,7 @@ import { CONTACT } from './contact.js';
 import StatsView from './StatsView.jsx';
 import { FEATURED_GUIDES } from './featuredGuides.js';
 import { BRAND, mascotImg, wordmarkSvg, ICONS } from './brand.js';
+import { BANNER } from './banner.js';
 
 // ============================================================================
 //  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
@@ -219,6 +220,17 @@ const CustomerView = ({ onAdminClick }) => {
             Пресметката е информативна; кредитот го склучуваш директно со институцијата.
           </p>
         </div>
+      )}
+
+      {step === 1 && (
+        <aside style={styles.banner} aria-label={BANNER.badge}>
+          <span style={styles.bannerMascot} dangerouslySetInnerHTML={{ __html: mascotImg(60) }} />
+          <div>
+            <span style={styles.bannerBadge}>{BANNER.badge}</span>
+            <strong style={styles.bannerTitle}>{BANNER.title}</strong>
+            <span style={styles.bannerText}>{BANNER.text}</span>
+          </div>
+        </aside>
       )}
 
       {step === 1 && (
@@ -485,6 +497,19 @@ const styles = {
     border: 'none', borderRadius: '12px', cursor: 'pointer', marginTop: '8px',
   },
   legalNote: { margin: '14px 0 0', fontSize: '12px', color: BRAND.muted, textAlign: 'center', lineHeight: 1.45 },
+
+  // ── банер (текстот е во src/banner.js; маскотата секогаш на светла позадина) ──
+  banner: {
+    display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px',
+    background: BRAND.primarySoft, border: `1px solid ${BRAND.border}`, borderRadius: '16px',
+  },
+  bannerMascot: { flexShrink: 0, lineHeight: 0 },
+  bannerBadge: {
+    display: 'inline-block', fontSize: '11.5px', fontWeight: '800', letterSpacing: '0.6px', textTransform: 'uppercase',
+    color: '#fff', background: BRAND.accentText, borderRadius: '10px', padding: '3px 9px',
+  },
+  bannerTitle: { display: 'block', fontSize: '18px', fontWeight: '800', color: BRAND.ink, lineHeight: 1.25, marginTop: '6px', textWrap: 'balance' },
+  bannerText: { display: 'block', fontSize: '13.5px', color: BRAND.text, lineHeight: 1.45, marginTop: '4px' },
 
   // ── знаци на доверба, „како работи“, водичи, даватели ──
   panel: { ...panelBase, padding: '18px 18px', display: 'flex', flexDirection: 'column', gap: '14px' },
