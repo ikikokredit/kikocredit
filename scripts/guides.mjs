@@ -861,7 +861,7 @@ ${termRow(`Хипотекарен ${formatNumber(MORT_AMOUNT)} ден., ${MORT_R
   sources: [SRC_DSTI.nbrm, SRC_DSTI.kurir, SRC_DSTI.makfax, SRC_DSTI.lider, SRC_DSTI.nezavisen],
 };
 
-export const GUIDES = [altaBitola, osiguruvanjeDepoziti, brzKredit, shtoESvt, bankaIliDrustvo, najpovolen, kreditBezZhirant, kreditDoPlata, noviPravila];
+export const GUIDES = [noviPravila, altaBitola, osiguruvanjeDepoziti, brzKredit, shtoESvt, bankaIliDrustvo, najpovolen, kreditBezZhirant, kreditDoPlata];
 export const guidePath = (g) => `/vodici/${g.slug}/`;
 
 // За тестови и проверка при build
