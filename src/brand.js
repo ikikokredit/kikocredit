@@ -22,6 +22,7 @@ export const BRAND = {
   primarySoft: '#E7EEF5',// светла позадина на ознаки
   accent: '#E0702F',     // портокалова на лисицата — ситни акценти, не за текст
   accentText: '#B8502B', // портокалова за „.com“ во името
+  accentLight: '#FFC27A',// светла портокалова — само на тегет позадина (банерот, src/banner.js)
   bg: '#F3F5F8',         // позадина на страницата
   card: '#FFFFFF',
   border: '#DCE2EA',

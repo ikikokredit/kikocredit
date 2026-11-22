@@ -26,7 +26,7 @@ import {
 } from '../src/institutions.js';
 import { calculateLoan, formatMKD, formatNumber, formatPct } from '../src/loan.js';
 import { CONTACT } from '../src/contact.js';
-import { BANNER } from '../src/banner.js';
+import { BANNER_CSS, bannerInner } from '../src/banner.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -169,27 +169,21 @@ table.fit td,table.fit th{padding:8px 4px}
 .guide-item:hover{border-color:${B.primary}}
 .guide-item strong{display:block;font-size:16px;color:${B.primary};margin-bottom:4px}
 .guide-item span{font-size:14px;color:${B.text}}
-.banner{display:flex;align-items:center;gap:14px;padding:16px 18px;background:${B.primarySoft};border:1px solid ${B.border};border-radius:16px;text-decoration:none;color:inherit}
-a.banner:hover{border-color:${B.primary}}
-.banner img{flex-shrink:0}
-.banner-badge{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff;background:${B.accentText};border-radius:10px;padding:3px 9px}
-.banner-title{display:block;font-size:18px;font-weight:800;color:${B.ink};line-height:1.25;margin-top:6px;text-wrap:balance}
-.banner-text{display:block;font-size:13.5px;color:${B.text};line-height:1.45;margin-top:4px}
-.banner-cta{display:block;font-size:14px;font-weight:700;color:${B.primary};margin-top:8px}
 .footer{text-align:center;color:${B.muted};font-size:12px;padding:4px 0 16px}
 .footer p{margin:0}
 .footer .small{color:${B.muted};font-size:11.5px;margin-top:8px}
 .footer .contact{margin-top:10px}
 .footer .contact a{color:${B.primary}}
-@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:8px 10px;font-size:13px}.logo-link img{height:40px}.brand svg{height:17px}.descriptor{font-size:11px}}`;
+@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:8px 10px;font-size:13px}.logo-link img{height:40px}.brand svg{height:17px}.descriptor{font-size:11px}}
+${BANNER_CSS}`;
 
 // Лента под логото на секоја статична страница — кратки знаци на доверба (исти тврдења како на почетната).
 const TRUSTBAR = ['Независна споредба', 'Без лични податоци', 'Услови од официјалните страници']
   .map((t) => `<span>${ICONS.check(14, '#9FE3B4')}${t}</span>`).join('');
 
-// Банер пред подножјето на секоја статична страница — ист како на почетната (текст: src/banner.js),
-// тука целиот води кон калкулаторот.
-const BANNER_HTML = `<a class="banner" href="/">${mascotImg(60)}<span><span class="banner-badge">${esc(BANNER.badge)}</span><strong class="banner-title">${esc(BANNER.title)}</strong><span class="banner-text">${esc(BANNER.text)}</span><span class="banner-cta">${esc(BANNER.cta)} →</span></span></a>`;
+// Банер пред подножјето на секоја статична страница — ист како на почетната (текст и изглед:
+// src/banner.js), тука целиот води кон калкулаторот.
+const BANNER_HTML = `<a class="kb" href="/">${bannerInner(true)}</a>`;
 
 function layout({ path, title, description, crumbs, main, jsonLd, ogType = 'website' }) {
   const url = SITE + path;
