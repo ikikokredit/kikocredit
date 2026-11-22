@@ -20,7 +20,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync }
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GUIDES, guidePath, GUIDES_UPDATED, PENALTY_RATE } from './guides.mjs';
-import { BRAND as B, foxSvg, faviconSvg, wordmarkSvg, ICONS } from '../src/brand.js';
+import { BRAND as B, mascotImg, wordmarkSvg, ICONS } from '../src/brand.js';
 import {
   activeInstitutions, financialInstitutions, typeLabel, DATA_UPDATED,
 } from '../src/institutions.js';
@@ -100,15 +100,16 @@ else fetch('/api/clicks',{method:'POST',headers:{'Content-Type':'application/jso
 const CSS = `*{box-sizing:border-box}
 body{margin:0;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;color:${B.text};line-height:1.5;background:${B.bg}}
 .app{min-height:100vh;background:${B.bg}}
-.topbar{background:${B.primaryDark}}
-.topbar-in{max-width:600px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.logo-link{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
-.logo-link svg{display:block}
+.topbar{background:#fff;border-bottom:1px solid ${B.border}}
+.topbar-in{max-width:600px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;min-width:0}
+.logo-link img{height:46px;width:auto;flex-shrink:0}
+.brand svg{height:21px;width:auto}
 .brand{display:block;line-height:0}
-.descriptor{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:5px;line-height:1.2;letter-spacing:.2px}
-.top-cta{font-size:14px;font-weight:700;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 12px;white-space:nowrap}
-.top-cta:hover{background:rgba(255,255,255,.12)}
-.trustbar{background:${B.primaryDark};border-top:1px solid rgba(255,255,255,.12)}
+.descriptor{display:block;font-size:12px;color:${B.muted};margin-top:3px;line-height:1.2;letter-spacing:.2px}
+.top-cta{font-size:14px;font-weight:700;color:#fff;background:${B.primary};text-decoration:none;border-radius:10px;padding:9px 12px;white-space:nowrap;flex-shrink:0}
+.top-cta:hover{background:${B.primaryDark}}
+.trustbar{background:${B.primaryDark}}
 .trustbar-in{max-width:600px;margin:0 auto;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:rgba(255,255,255,.9)}
 .trustbar span{display:inline-flex;align-items:center;gap:6px}
 .container{max-width:600px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
@@ -172,7 +173,7 @@ table.fit td,table.fit th{padding:8px 4px}
 .footer .small{color:${B.muted};font-size:11.5px;margin-top:8px}
 .footer .contact{margin-top:10px}
 .footer .contact a{color:${B.primary}}
-@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:7px 10px;font-size:13px}}`;
+@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:8px 10px;font-size:13px}.logo-link img{height:40px}.brand svg{height:17px}.descriptor{font-size:11px}}`;
 
 // Лента под логото на секоја статична страница — кратки знаци на доверба (исти тврдења како на почетната).
 const TRUSTBAR = ['Независна споредба', 'Без лични податоци', 'Услови од официјалните страници']
@@ -211,7 +212,7 @@ ${GA}
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${SITE}/og-image.png">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="${B.primaryDark}">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
@@ -220,8 +221,8 @@ ${GA}
 <body>
 <div class="app">
 <header class="topbar"><div class="topbar-in">
-<a href="/" class="logo-link" aria-label="KikoCredit — почетна">${foxSvg(44)}<span><span class="brand">${wordmarkSvg(21)}</span><span class="descriptor">${B.descriptor}</span></span></a>
-<a class="top-cta" href="/">Спореди понуди →</a>
+<a href="/" class="logo-link" aria-label="KikoCredit — почетна">${mascotImg(46)}<span><span class="brand">${wordmarkSvg(21)}</span><span class="descriptor">${B.descriptor}</span></span></a>
+<a class="top-cta" href="/">Спореди →</a>
 </div></header>
 <div class="trustbar"><div class="trustbar-in">${TRUSTBAR}</div></div>
 <div class="container">
@@ -576,8 +577,7 @@ rmSync(join(DIST, 'vodici'), { recursive: true, force: true });
 write('vodici/index.html', guidesHubPage());
 for (const g of GUIDES) write(`vodici/${g.slug}/index.html`, guidePage(g));
 
-// 3) sitemap.xml, llms.txt, икона (од src/brand.js — ист цртеж како логото)
-write('favicon.svg', faviconSvg());
+// 3) sitemap.xml, llms.txt
 write('sitemap.xml', sitemap());
 write('llms.txt', llms());
 rmSync(join(ROOT, 'dist-ssr'), { recursive: true, force: true });

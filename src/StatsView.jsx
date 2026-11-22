@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { typeLabel } from './institutions.js';
-import { BRAND, faviconSvg, wordmarkSvg } from './brand.js';
+import { BRAND, mascotImg, wordmarkSvg } from './brand.js';
 
 // ============================================================================
 //  Статистика — kikocredit.com/#admin (или копчето ⚙️)
@@ -97,8 +97,8 @@ export default function StatsView({ onClose, endpoint }) {
     <div style={s.container}>
       <header style={s.header}>
         <div style={s.logoRow}>
-          <span style={s.logo} dangerouslySetInnerHTML={{ __html: faviconSvg() }} />
-          <h1 style={s.brand} dangerouslySetInnerHTML={{ __html: wordmarkSvg(22, BRAND.ink) }} />
+          <span style={s.logo} dangerouslySetInnerHTML={{ __html: mascotImg(40) }} />
+          <h1 style={s.brand} dangerouslySetInnerHTML={{ __html: wordmarkSvg(20) }} />
           <span style={s.badge}>Статистика</span>
         </div>
         <button onClick={onClose} style={s.closeBtn} title="Назад кон сајтот">✕</button>
@@ -208,8 +208,8 @@ export default function StatsView({ onClose, endpoint }) {
 const s = {
   container: { maxWidth: '760px', margin: '0 auto', padding: '20px', minHeight: '100vh', fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif", color: BRAND.text },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' },
-  logoRow: { display: 'flex', alignItems: 'center', gap: '10px' },
-  logo: { display: 'inline-block', width: '40px', height: '40px', lineHeight: 0 },
+  logoRow: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
+  logo: { display: 'inline-block', lineHeight: 0 },
   brand: { margin: 0, lineHeight: 0 },
   badge: { background: BRAND.primarySoft, color: BRAND.primary, padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700' },
   closeBtn: { background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '50%', width: '40px', height: '40px', fontSize: '18px', color: BRAND.text, cursor: 'pointer' },

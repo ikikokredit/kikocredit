@@ -4,7 +4,7 @@ import { calculateLoan, formatMKD, formatPct } from './loan.js';
 import { CONTACT } from './contact.js';
 import StatsView from './StatsView.jsx';
 import { FEATURED_GUIDES } from './featuredGuides.js';
-import { BRAND, foxSvg, wordmarkSvg, ICONS } from './brand.js';
+import { BRAND, mascotImg, wordmarkSvg, ICONS } from './brand.js';
 
 // ============================================================================
 //  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
@@ -149,14 +149,14 @@ const CustomerView = ({ onAdminClick }) => {
       <header style={styles.topbar}>
         <div style={styles.topbarInner}>
           <a href="/" style={styles.logoLink} aria-label="KikoCredit — почетна">
-            <span style={styles.logoMark} dangerouslySetInnerHTML={{ __html: foxSvg(44) }} />
+            <span style={styles.logoMark} dangerouslySetInnerHTML={{ __html: mascotImg(46) }} />
             <span>
               <span style={styles.brandName} dangerouslySetInnerHTML={{ __html: wordmarkSvg(21) }} />
               <span style={styles.brandDescriptor}>{BRAND.descriptor}</span>
             </span>
           </a>
           <button onClick={onAdminClick} style={styles.adminButton} aria-label="Статистика"
-            dangerouslySetInnerHTML={{ __html: ICONS.stats(18, 'rgba(255,255,255,0.75)') }} />
+            dangerouslySetInnerHTML={{ __html: ICONS.stats(18, BRAND.muted) }} />
         </div>
       </header>
 
@@ -443,23 +443,23 @@ const styles = {
   page: { minHeight: '100vh' },
 
   // ── горна лента со логото ──
-  topbar: { background: BRAND.primaryDark },
+  topbar: { background: '#fff', borderBottom: `1px solid ${BRAND.border}` },
   topbarInner: {
-    maxWidth: '480px', margin: '0 auto', padding: '12px 16px',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+    maxWidth: '480px', margin: '0 auto', padding: '8px 16px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
   },
-  logoLink: { display: 'inline-flex', alignItems: 'center', gap: '10px', textDecoration: 'none' },
+  logoLink: { display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none', minWidth: 0 },
   logoMark: { display: 'inline-flex', lineHeight: 0 },
   brandName: { display: 'block', lineHeight: 0 },
-  brandDescriptor: { display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop: '5px', lineHeight: 1.2, letterSpacing: '0.2px' },
+  brandDescriptor: { display: 'block', fontSize: '12px', color: BRAND.muted, marginTop: '3px', lineHeight: 1.2, letterSpacing: '0.2px' },
   adminButton: {
-    background: 'transparent', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '10px',
+    background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '10px', flexShrink: 0,
     width: '36px', height: '36px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
   },
 
   // ── воведен дел ──
   hero: { background: BRAND.primaryDark, paddingBottom: '52px' },
-  heroInner: { maxWidth: '480px', margin: '0 auto', padding: '8px 16px 0' },
+  heroInner: { maxWidth: '480px', margin: '0 auto', padding: '14px 16px 0' },
   heroTitle: { color: '#fff', fontSize: '24px', lineHeight: 1.25, fontWeight: '800', margin: '8px 0 8px', letterSpacing: '-0.2px' },
   heroSub: { color: 'rgba(255,255,255,0.88)', fontSize: '15px', lineHeight: 1.45, margin: '0 0 18px' },
   progressContainer: { margin: '8px 0 0' },
