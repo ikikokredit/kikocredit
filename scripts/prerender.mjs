@@ -26,6 +26,7 @@ import {
 } from '../src/institutions.js';
 import { calculateLoan, formatMKD, formatNumber, formatPct } from '../src/loan.js';
 import { CONTACT } from '../src/contact.js';
+import { BANNER_CSS, bannerInner } from '../src/banner.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -173,11 +174,16 @@ table.fit td,table.fit th{padding:8px 4px}
 .footer .small{color:${B.muted};font-size:11.5px;margin-top:8px}
 .footer .contact{margin-top:10px}
 .footer .contact a{color:${B.primary}}
-@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:8px 10px;font-size:13px}.logo-link img{height:40px}.brand svg{height:17px}.descriptor{font-size:11px}}`;
+@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:8px 10px;font-size:13px}.logo-link img{height:40px}.brand svg{height:17px}.descriptor{font-size:11px}}
+${BANNER_CSS}`;
 
 // Лента под логото на секоја статична страница — кратки знаци на доверба (исти тврдења како на почетната).
 const TRUSTBAR = ['Независна споредба', 'Без лични податоци', 'Услови од официјалните страници']
   .map((t) => `<span>${ICONS.check(14, '#9FE3B4')}${t}</span>`).join('');
+
+// Банер пред подножјето на секоја статична страница — ист како на почетната (текст и изглед:
+// src/banner.js), тука целиот води кон калкулаторот.
+const BANNER_HTML = `<a class="kb" href="/">${bannerInner(true)}</a>`;
 
 function layout({ path, title, description, crumbs, main, jsonLd, ogType = 'website' }) {
   const url = SITE + path;
@@ -230,6 +236,7 @@ ${GA}
 <main class="stack">
 ${main}
 </main>
+${BANNER_HTML}
 <footer class="footer">
 <p>© ${YEAR} KikoCredit.com — независна споредба на кредити</p>
 <p class="small">KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од официјалните страници на институциите; за точните услови важи понудата на самата институција.</p>

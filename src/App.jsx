@@ -5,6 +5,7 @@ import { CONTACT } from './contact.js';
 import StatsView from './StatsView.jsx';
 import { FEATURED_GUIDES } from './featuredGuides.js';
 import { BRAND, mascotImg, wordmarkSvg, ICONS } from './brand.js';
+import { BANNER, BANNER_CSS, bannerInner } from './banner.js';
 
 // ============================================================================
 //  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
@@ -219,6 +220,13 @@ const CustomerView = ({ onAdminClick }) => {
             Пресметката е информативна; кредитот го склучуваш директно со институцијата.
           </p>
         </div>
+      )}
+
+      {step === 1 && (
+        <>
+          <style dangerouslySetInnerHTML={{ __html: BANNER_CSS }} />
+          <aside className="kb" aria-label={BANNER.badge} dangerouslySetInnerHTML={{ __html: bannerInner() }} />
+        </>
       )}
 
       {step === 1 && (
