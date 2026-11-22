@@ -146,7 +146,7 @@ const CustomerView = ({ onAdminClick }) => {
   const bestIndex = filter === 'all' ? visibleResults.findIndex(o => o.svtVerified) : -1;
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="kb-pad">
       <header style={styles.topbar}>
         <div style={styles.topbarInner}>
           <a href="/" style={styles.logoLink} aria-label="KikoCredit — почетна">
@@ -220,13 +220,6 @@ const CustomerView = ({ onAdminClick }) => {
             Пресметката е информативна; кредитот го склучуваш директно со институцијата.
           </p>
         </div>
-      )}
-
-      {step === 1 && (
-        <>
-          <style dangerouslySetInnerHTML={{ __html: BANNER_CSS }} />
-          <aside className="kb" aria-label={BANNER.badge} dangerouslySetInnerHTML={{ __html: bannerInner() }} />
-        </>
       )}
 
       {step === 1 && (
@@ -400,6 +393,10 @@ const CustomerView = ({ onAdminClick }) => {
         </p>
       </footer>
       </div>
+
+      {/* Летечки банер на дното на екранот (текст, изглед и правила: src/banner.js) */}
+      <style dangerouslySetInnerHTML={{ __html: BANNER_CSS }} />
+      <aside className="kb" aria-label={BANNER.badge} dangerouslySetInnerHTML={{ __html: bannerInner() }} />
     </div>
   );
 };
@@ -448,7 +445,7 @@ const styles = {
     background: BRAND.bg,
     color: BRAND.text,
   },
-  page: { minHeight: '100vh' },
+  page: { minHeight: '100vh', boxSizing: 'border-box' },
 
   // ── горна лента со логото ──
   topbar: { background: '#fff', borderBottom: `1px solid ${BRAND.border}` },
