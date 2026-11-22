@@ -3,7 +3,8 @@ import { typeLabel } from './institutions.js';
 
 // ============================================================================
 //  Статистика — kikocredit.com/#admin (или копчето ⚙️)
-//  Покажува кои институции добиваат кликови на „Аплицирај", со кои износи и рати.
+//  Покажува кои институции добиваат кликови: „Аплицирај" во калкулаторот (со износ и рата)
+//  и „Оди на страницата на X" на страниците на давателите (само институцијата).
 //  Нема лични податоци. Лозинката се проверува на серверот (env ADMIN_PASSWORD).
 // ============================================================================
 
@@ -77,7 +78,7 @@ export default function StatsView({ onClose, endpoint }) {
 
   const exportCsv = () => {
     if (!data) return;
-    const cols = ['institution_id', 'institution_name', 'type', 'clicks', 'clicks7', 'clicks30', 'avg_amount', 'avg_installment', 'avg_months', 'last_click'];
+    const cols = ['institution_id', 'institution_name', 'type', 'clicks', 'clicks_calculator', 'clicks_page', 'clicks7', 'clicks30', 'avg_amount', 'avg_installment', 'avg_months', 'last_click'];
     const esc = v => { const s = v == null ? '' : String(v); return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     const lines = [cols.join(';'), ...data.byInstitution.map(r => cols.map(c => esc(r[c])).join(';'))];
     const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -123,6 +124,11 @@ export default function StatsView({ onClose, endpoint }) {
             <div style={s.stat}><span style={{ ...s.statNum, color: '#4a4a8a' }}>{data?.totals?.today ?? 0}</span><span style={s.statLabel}>денес</span></div>
           </div>
 
+          <p style={s.sourceLine}>
+            Од калкулаторот („Аплицирај“): <b>{data?.totals?.from_calculator ?? data?.totals?.total ?? 0}</b>
+            {' · '}Од страниците на давателите: <b>{data?.totals?.from_pages ?? 0}</b>
+          </p>
+
           <div style={s.toolbar}>
             <button onClick={() => load()} style={s.secondaryBtn} disabled={loading}>{loading ? '…' : '🔄 Освежи'}</button>
             <button onClick={exportCsv} style={s.secondaryBtn} disabled={!data?.byInstitution?.length}>⬇️ CSV</button>
@@ -148,7 +154,7 @@ export default function StatsView({ onClose, endpoint }) {
           <div style={s.card}>
             <h3 style={s.h3}>По институција</h3>
             {(!data?.byInstitution || data.byInstitution.length === 0) && (
-              <p style={{ margin: 0, color: '#666', textAlign: 'center' }}>Сè уште нема кликови на „Аплицирај".</p>
+              <p style={{ margin: 0, color: '#666', textAlign: 'center' }}>Сè уште нема кликови кон давателите.</p>
             )}
             {(data?.byInstitution || []).map(r => (
               <div key={r.institution_id} style={s.instRow}>
@@ -161,6 +167,8 @@ export default function StatsView({ onClose, endpoint }) {
                 </div>
                 <div style={s.track}><div style={{ ...s.fill, width: `${(r.clicks / maxClicks) * 100}%` }} /></div>
                 <div style={s.instMeta}>
+                  <span>Калкулатор: <b>{r.clicks_calculator ?? r.clicks}</b></span>
+                  <span>Страница: <b>{r.clicks_page ?? 0}</b></span>
                   <span>Просечен износ: <b>{formatMKD(r.avg_amount)}</b></span>
                   <span>Рата: <b>{formatMKD(r.avg_installment)}</b></span>
                   <span>Рати: <b>{r.avg_months ?? '—'}</b></span>
@@ -179,7 +187,12 @@ export default function StatsView({ onClose, endpoint }) {
               <div key={r.id} style={s.recentRow}>
                 <span style={s.recentTime}>{formatDate(r.created_at)}</span>
                 <span style={s.recentName}>{r.institution_name}</span>
-                <span style={s.recentVals}>{formatMKD(r.amount)} · {formatMKD(r.monthly_payment)} × {r.months ?? '—'} · {r.device === 'mobile' ? '📱' : '💻'}</span>
+                <span style={s.recentVals}>
+                  {r.source === 'lender_page'
+                    ? 'од страницата на давателот'
+                    : `${formatMKD(r.amount)} · ${formatMKD(r.monthly_payment)} × ${r.months ?? '—'}`}
+                  {' · '}{r.device === 'mobile' ? '📱' : '💻'}
+                </span>
               </div>
             ))}
           </div>
@@ -212,6 +225,7 @@ const s = {
   stat: { flex: 1, minWidth: '76px', background: 'rgba(255,255,255,0.92)', borderRadius: '16px', padding: '12px', textAlign: 'center' },
   statNum: { display: 'block', fontSize: '24px', fontWeight: '800', color: '#333' },
   statLabel: { fontSize: '11px', color: '#777' },
+  sourceLine: { margin: '0 0 14px', padding: '10px 14px', background: 'rgba(255,255,255,0.92)', borderRadius: '16px', fontSize: '13px', color: '#555', textAlign: 'center' },
   toolbar: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' },
   bars: { display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100px', overflowX: 'auto' },
   barCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '18px', flex: 1 },
