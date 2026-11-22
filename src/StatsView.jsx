@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { typeLabel } from './institutions.js';
-import { BRAND, faviconSvg } from './brand.js';
+import { BRAND, faviconSvg, wordmarkSvg } from './brand.js';
 
 // ============================================================================
 //  Статистика — kikocredit.com/#admin (или копчето ⚙️)
@@ -98,7 +98,7 @@ export default function StatsView({ onClose, endpoint }) {
       <header style={s.header}>
         <div style={s.logoRow}>
           <span style={s.logo} dangerouslySetInnerHTML={{ __html: faviconSvg() }} />
-          <h1 style={s.brand}>Кико</h1>
+          <h1 style={s.brand} dangerouslySetInnerHTML={{ __html: wordmarkSvg(22, BRAND.ink) }} />
           <span style={s.badge}>Статистика</span>
         </div>
         <button onClick={onClose} style={s.closeBtn} title="Назад кон сајтот">✕</button>
@@ -210,7 +210,7 @@ const s = {
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' },
   logoRow: { display: 'flex', alignItems: 'center', gap: '10px' },
   logo: { display: 'inline-block', width: '40px', height: '40px', lineHeight: 0 },
-  brand: { fontSize: '26px', fontWeight: '800', color: BRAND.ink, margin: 0, letterSpacing: '-0.3px' },
+  brand: { margin: 0, lineHeight: 0 },
   badge: { background: BRAND.primarySoft, color: BRAND.primary, padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700' },
   closeBtn: { background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '50%', width: '40px', height: '40px', fontSize: '18px', color: BRAND.text, cursor: 'pointer' },
   card: { background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '16px', padding: '22px', boxShadow: '0 1px 2px rgba(27,26,61,0.04)', marginBottom: '16px' },

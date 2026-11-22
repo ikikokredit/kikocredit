@@ -4,7 +4,7 @@ import { calculateLoan, formatMKD, formatPct } from './loan.js';
 import { CONTACT } from './contact.js';
 import StatsView from './StatsView.jsx';
 import { FEATURED_GUIDES } from './featuredGuides.js';
-import { BRAND, foxSvg, ICONS } from './brand.js';
+import { BRAND, foxSvg, wordmarkSvg, ICONS } from './brand.js';
 
 // ============================================================================
 //  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
@@ -149,9 +149,9 @@ const CustomerView = ({ onAdminClick }) => {
       <header style={styles.topbar}>
         <div style={styles.topbarInner}>
           <a href="/" style={styles.logoLink} aria-label="KikoCredit — почетна">
-            <span style={styles.logoMark} dangerouslySetInnerHTML={{ __html: foxSvg(38) }} />
+            <span style={styles.logoMark} dangerouslySetInnerHTML={{ __html: foxSvg(44) }} />
             <span>
-              <span style={styles.brandName}>{BRAND.name}</span>
+              <span style={styles.brandName} dangerouslySetInnerHTML={{ __html: wordmarkSvg(21) }} />
               <span style={styles.brandDescriptor}>{BRAND.descriptor}</span>
             </span>
           </a>
@@ -450,8 +450,8 @@ const styles = {
   },
   logoLink: { display: 'inline-flex', alignItems: 'center', gap: '10px', textDecoration: 'none' },
   logoMark: { display: 'inline-flex', lineHeight: 0 },
-  brandName: { display: 'block', fontSize: '24px', fontWeight: '800', color: '#fff', lineHeight: 1, letterSpacing: '-0.3px' },
-  brandDescriptor: { display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop: '4px', lineHeight: 1.2 },
+  brandName: { display: 'block', lineHeight: 0 },
+  brandDescriptor: { display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop: '5px', lineHeight: 1.2, letterSpacing: '0.2px' },
   adminButton: {
     background: 'transparent', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '10px',
     width: '36px', height: '36px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,

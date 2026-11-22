@@ -20,7 +20,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync }
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GUIDES, guidePath, GUIDES_UPDATED, PENALTY_RATE } from './guides.mjs';
-import { BRAND as B, foxSvg, faviconSvg, ICONS } from '../src/brand.js';
+import { BRAND as B, foxSvg, faviconSvg, wordmarkSvg, ICONS } from '../src/brand.js';
 import {
   activeInstitutions, financialInstitutions, typeLabel, DATA_UPDATED,
 } from '../src/institutions.js';
@@ -104,8 +104,8 @@ body{margin:0;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;
 .topbar-in{max-width:600px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .logo-link{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
 .logo-link svg{display:block}
-.brand{display:block;font-size:24px;font-weight:800;color:#fff;line-height:1;letter-spacing:-.3px}
-.descriptor{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:4px;line-height:1.2}
+.brand{display:block;line-height:0}
+.descriptor{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:5px;line-height:1.2;letter-spacing:.2px}
 .top-cta{font-size:14px;font-weight:700;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 12px;white-space:nowrap}
 .top-cta:hover{background:rgba(255,255,255,.12)}
 .trustbar{background:${B.primaryDark};border-top:1px solid rgba(255,255,255,.12)}
@@ -220,7 +220,7 @@ ${GA}
 <body>
 <div class="app">
 <header class="topbar"><div class="topbar-in">
-<a href="/" class="logo-link" aria-label="KikoCredit — почетна">${foxSvg(38)}<span><span class="brand">${B.name}</span><span class="descriptor">${B.descriptor}</span></span></a>
+<a href="/" class="logo-link" aria-label="KikoCredit — почетна">${foxSvg(44)}<span><span class="brand">${wordmarkSvg(21)}</span><span class="descriptor">${B.descriptor}</span></span></a>
 <a class="top-cta" href="/">Спореди понуди →</a>
 </div></header>
 <div class="trustbar"><div class="trustbar-in">${TRUSTBAR}</div></div>
