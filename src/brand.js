@@ -27,43 +27,45 @@ export const BRAND = {
 };
 
 // ── Лого ────────────────────────────────────────────────────────────────────
-// Лисицата на Кико — сопствен цртеж (не емоџи), ист на секој уред. Фасетирана глава,
-// симетрична околу x = 60 (viewBox 0 0 120 120): левата половина е осветлена, десната во
-// сенка — „две страни една до друга“, како две понуди што се споредуваат.
-// На темна позадина оди самата лисица (foxSvg); на светла — плочката (faviconSvg).
-const FOX_P = {
-  T: [19, 5], Ei: [46, 36], Tc: [60, 42], Eo: [13, 50], Ck: [3, 70], Jw: [31, 93],
-  H: [25, 63], Cn: [60, 74], Sn: [49, 86], Nl: [52.500, 91], Nb: [60, 101], Ch: [60, 113],
-  Bo: [28, 52], Bc: [60, 57],
-};
-const FOX_LIGHT = { earOut: '#F97316', earIn: '#7C2D12', crown: '#FF9A3C', forehead: '#FB8424', side: '#EA580C', snout: '#F97316', cheek: '#FFFFFF' };
-const FOX_SHADE = { earOut: '#DD5A0A', earIn: '#65210D', crown: '#F4700F', forehead: '#E8640C', side: '#B93C0B', snout: '#DD5A0A', cheek: '#E6E3F5' };
-const FOX_INK = '#16153A';
-const foxPts = (arr, mirror) => arr.map(([x, y]) => `${mirror ? 120 - x : x},${y}`).join(' ');
-const foxFacets = (c, m) => {
-  const P = FOX_P;
-  return [
-    [c.earOut, [P.T, P.Ei, P.Eo]],
-    [c.earIn, [[23, 17], [40, 37], [19, 43]]],
-    [c.crown, [P.Eo, P.Ei, P.Tc, P.Bc, P.Bo]],
-    [c.forehead, [P.Eo, P.Bo, P.Bc, P.Cn, P.H]],
-    [c.side, [P.Eo, P.H, P.Ck]],
-    [c.snout, [P.H, P.Cn, [60, 91], P.Nl, P.Sn]],
-    [c.cheek, [P.Ck, P.H, P.Sn, P.Nl, P.Nb, P.Ch, P.Jw]],
-  ].map(([fill, a]) => `<polygon fill="${fill}" stroke="${fill}" stroke-width=".4" stroke-linejoin="round" points="${foxPts(a, m)}"/>`).join('');
-};
-const foxEye = (m) => `<polygon fill="${FOX_INK}" stroke="${FOX_INK}" stroke-width="1.600" stroke-linejoin="round" points="${foxPts([[29, 60], [38, 55], [46.500, 61.500], [38, 64.500]], m)}"/>`
-  + `<circle fill="#fff" cx="${m ? 79.500 : 40.500}" cy="58.600" r="1.500"/>`;
-const FOX_INNER = foxFacets(FOX_LIGHT, false) + foxFacets(FOX_SHADE, true)
-  + `<path fill="${FOX_INK}" stroke="${FOX_INK}" stroke-width="2.400" stroke-linejoin="round" d="M54 91.500h12L60 99.500z"/>`
-  + foxEye(false) + foxEye(true);
+// Лисицата на Кико — сопствен цртеж (не емоџи), ист на секој уред: пријателска лисица со
+// вистински изглед (темни врвови на ушите, бели образи и муцка) што намигнува и се смешка
+// задоволно — како некој што споредил пред да потпише и поминал попаметно.
+// viewBox 0 0 120 120. На темна позадина оди самата лисица (foxSvg); на светла — плочката (faviconSvg).
+const FOX = { fur: '#F47B20', furDark: '#D9580B', furLight: '#FF9A45', ear: '#3A1D12', inner: '#FFE3C7', white: '#FFFFFF', ink: '#2B1810' };
+const FOX_EAR = `<path fill="${FOX.furDark}" d="M17 55C9 37 12 16 22 3c14 8 26 21 32 38z"/>`
+  + `<path fill="${FOX.inner}" d="M22 48c-5-13-3-26 2-35 9 7 17 16 21 27z"/>`
+  + `<path fill="${FOX.ear}" d="M22 3c-3 5-5.500 10.500-6.500 16C20 14.500 26 12 31 10.500 28 7.500 25 5 22 3z"/>`;
+const foxMirror = (s) => `<g transform="translate(120 0) scale(-1 1)">${s}</g>`;
+const FOX_INNER = FOX_EAR + foxMirror(FOX_EAR)
+  // прамен на темето
+  + `<path fill="${FOX.fur}" d="M53.500 32c1.500-5 3.800-8 6.500-11 .200 3.500 1 5.500 2.800 7 1.200-2 2.700-3.300 4.700-4.300-.300 3-.500 5.800-1 8.300z"/>`
+  // глава: широки образи со по два прамена, па тесна муцка
+  + `<path fill="${FOX.fur}" d="M60 30c-10-1-20 3-29 12C24 49 15 57 3 62c6 3 10 5 14 7.500-4 3.500-8 7.500-10 12 6 .500 12 2.500 17 5.500 9 6 18.500 17.500 33.500 23.300 1.500.600 3.500.600 5 0C77.500 104.500 87 93 96 87c5-3 11-5 17-5.500-2-4.500-6-8.500-10-12 4-2.500 8-4.500 14-7.500-12-5-21-13-28-20-9-9-19-13-29-12z"/>`
+  // посветло чело
+  + `<path fill="${FOX.furLight}" d="M60 33c-6 0-11 2-15 5 3 8 8 15 15 19 7-4 12-11 15-19-4-3-9-5-15-5z"/>`
+  // бела маска: образи и муцка
+  + `<path fill="${FOX.white}" d="M3 62c13-2 26 4 37 10 6 1 10-2 11.500-7C53 72 54 79 55.500 85h9c1.500-6 2.500-13 4-20 1.500 5 5.500 8 11.500 7 11-6 24-12 37-10-6 3-10 5-14 7.500 4 3.500 8 7.500 10 12-6 .500-12 2.500-17 5.500-9 6-18.500 17.500-33.500 23.300-1.500.600-3.500.600-5 0C42.500 104.500 33 93 24 87c-5-3-11-5-17-5.500 2-4.500 6-8.500 10-12-4-2.500-8-4.500-14-7.500z"/>`
+  // нос
+  + `<path fill="${FOX.ink}" d="M52 84.500c0-3.200 3.800-4.700 8-4.700s8 1.500 8 4.700c0 4-4.600 7.500-8 7.500s-8-3.500-8-7.500z"/><ellipse cx="57.500" cy="83" rx="2.200" ry="1.100" fill="#fff" opacity=".45"/>`
+  // насмевка (задоволна, малку накриво)
+  + `<path fill="none" stroke="${FOX.ink}" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" d="M60 92v3.200M47.500 94c2.800 6 9.800 7 12.500 1.200 2.800 6 10.800 5.500 14.500-2.700"/>`
+  + `<path fill="none" stroke="${FOX.ink}" stroke-width="1.600" stroke-linecap="round" d="M73.500 90c1.500.800 2.300 2 2.500 3.500"/>`
+  // лево око — отворено
+  + `<path fill="${FOX.ink}" d="M31.500 62c3.500-6 12.500-7 17-.500-4 5-12.500 5.500-17 .500z"/><circle cx="41.800" cy="59.800" r="1.800" fill="#fff"/>`
+  + `<path fill="none" stroke="${FOX.ink}" stroke-width="1.800" stroke-linecap="round" d="M30.500 62.200c3.800-7 13.500-8 18.500-1"/>`
+  // десно око — намигнува
+  + `<path fill="none" stroke="${FOX.ink}" stroke-width="2.800" stroke-linecap="round" d="M71.500 63c4-5.500 13-5.500 17.500-.500"/>`
+  // веѓи
+  + `<path fill="none" stroke="${FOX.furDark}" stroke-width="2.200" stroke-linecap="round" d="M31 53.500c4.500-3.500 11-4 16-1.500M73 55c4.500-2.500 10.500-2.500 15 0"/>`
+  // точки за мустаќи
+  + [[43, 87.500], [39.500, 90.500], [44.500, 92], [77, 86.500], [80.500, 89.500], [75.500, 91]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1" fill="${FOX.ink}" opacity=".32"/>`).join('');
 
 export const foxSvg = (size = 40, title = '') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="${size}" height="${size}" role="img"${title ? ` aria-label="${title}"` : ' aria-hidden="true"'}>${FOX_INNER}</svg>`;
 
 // Плочка: лисицата на заоблен индиго квадрат — икона за прелистувач/телефон и лого на светла позадина.
 export const faviconSvg = (size) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"${size ? ` width="${size}" height="${size}"` : ''}>`
   + '<defs><linearGradient id="kiko-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A40C8"/><stop offset="1" stop-color="#1F1A5C"/></linearGradient></defs>'
-  + `<rect width="120" height="120" rx="27" fill="url(#kiko-bg)"/><g transform="translate(18 19) scale(.7)">${FOX_INNER}</g></svg>`;
+  + `<rect width="120" height="120" rx="27" fill="url(#kiko-bg)"/><g transform="translate(16.500 17) scale(.725)">${FOX_INNER}</g></svg>`;
 
 // Името „Кико“ како контури (Unbounded ExtraBold, SIL Open Font License) — исто на секој уред,
 // без вчитување фонт. Истиот фонт го користат и сликите за социјалните мрежи.
