@@ -4,6 +4,7 @@ import { calculateLoan, formatMKD, formatPct } from './loan.js';
 import { CONTACT } from './contact.js';
 import StatsView from './StatsView.jsx';
 import { FEATURED_GUIDES } from './featuredGuides.js';
+import { BRAND, mascotImg, wordmarkSvg, ICONS } from './brand.js';
 
 // ============================================================================
 //  KikoCredit — споредба на потрошувачки кредити (банки + финансиски друштва)
@@ -58,6 +59,21 @@ const FILTERS = [
   { key: 'all', label: 'Сите' },
   { key: 'bank', label: '🏦 Банки' },
   { key: 'finance', label: '💳 Друштва' },
+];
+
+// Знаци на доверба на почетната. Секоја реченица мора да е точна — ако се смени моделот
+// (на пр. провизија од давателите), прво смени го текстот тука.
+const TRUST = [
+  { icon: 'shield', title: 'Независна споредба', text: 'Не сме банка ни финансиско друштво и не даваме кредити.' },
+  { icon: 'scale', title: 'Подредено по вкупен трошок', text: 'Давателите не плаќаат за местото во листата.' },
+  { icon: 'lock', title: 'Без лични податоци', text: 'Не бараме име, телефон ни матичен број.' },
+  { icon: 'check', title: 'Проверени услови', text: `Од официјалните страници на давателите. Ажурирано: ${DATA_UPDATED_LABEL}.` },
+];
+
+const HOW = [
+  { title: 'Внеси износ и рата', text: 'Колку ти треба и колку можеш да плаќаш месечно.' },
+  { title: 'Спореди ги понудите', text: 'Број на рати, СВТ и вкупно за враќање кај секој давател.' },
+  { title: 'Аплицирај кај давателот', text: 'Те водиме на неговата страница; кредитот го склучуваш директно со него.' },
 ];
 
 const CustomerView = ({ onAdminClick }) => {
@@ -129,28 +145,42 @@ const CustomerView = ({ onAdminClick }) => {
   const bestIndex = filter === 'all' ? visibleResults.findIndex(o => o.svtVerified) : -1;
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <div style={styles.logoContainer}>
-          <span style={styles.logo}>🦊</span>
-          <h1 style={styles.brandName}>Кико</h1>
+    <div style={styles.page}>
+      <header style={styles.topbar}>
+        <div style={styles.topbarInner}>
+          <a href="/" style={styles.logoLink} aria-label="KikoCredit — почетна">
+            <span style={styles.logoMark} dangerouslySetInnerHTML={{ __html: mascotImg(46) }} />
+            <span>
+              <span style={styles.brandName} dangerouslySetInnerHTML={{ __html: wordmarkSvg(21) }} />
+              <span style={styles.brandDescriptor}>{BRAND.descriptor}</span>
+            </span>
+          </a>
+          <button onClick={onAdminClick} style={styles.adminButton} aria-label="Статистика"
+            dangerouslySetInnerHTML={{ __html: ICONS.stats(18, BRAND.muted) }} />
         </div>
-        <p style={styles.tagline}>Најди го најдобриот кредит за тебе</p>
-        <button onClick={onAdminClick} style={styles.adminButton} aria-label="Статистика">
-          ⚙️
-        </button>
       </header>
 
-      <div style={styles.progressContainer}>
-        <div style={styles.progressBar}>
-          <div style={{...styles.progressFill, width: `${(step / 2) * 100}%`}}></div>
-        </div>
-        <div style={styles.progressSteps}>
-          <span style={step >= 1 ? styles.activeStep : styles.inactiveStep}>Износ и рата</span>
-          <span style={step >= 2 ? styles.activeStep : styles.inactiveStep}>Понуди</span>
+      <div style={styles.hero}>
+        <div style={styles.heroInner}>
+          {step === 1 && (
+            <>
+              <h1 style={styles.heroTitle}>Спореди кредити од {activeInstitutions.length} банки и финансиски друштва</h1>
+              <p style={styles.heroSub}>Независно и бесплатно. Не сме банка и не даваме кредити.</p>
+            </>
+          )}
+          <div style={styles.progressContainer}>
+            <div style={styles.progressBar}>
+              <div style={{...styles.progressFill, width: `${(step / 2) * 100}%`}}></div>
+            </div>
+            <div style={styles.progressSteps}>
+              <span style={step >= 1 ? styles.activeStep : styles.inactiveStep}>1. Износ и рата</span>
+              <span style={step >= 2 ? styles.activeStep : styles.inactiveStep}>2. Понуди</span>
+            </div>
+          </div>
         </div>
       </div>
 
+      <div style={styles.container}>
       {step === 1 && (
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Колку ти треба?</h2>
@@ -182,19 +212,47 @@ const CustomerView = ({ onAdminClick }) => {
           </div>
 
           <button onClick={handleCalculate} style={styles.primaryButton}>
-            Пресметај понуди 📊
+            Спореди ги понудите
           </button>
 
           <p style={styles.legalNote}>
-            Споредба на {activeInstitutions.length} банки и финансиски друштва во Македонија.
             Пресметката е информативна; кредитот го склучуваш директно со институцијата.
           </p>
         </div>
       )}
 
       {step === 1 && (
-        <nav style={styles.lendersNav} aria-label="Водичи">
-          <h2 style={styles.lendersTitle}>📚 Пред да земеш кредит</h2>
+        <section style={styles.panel} aria-label="Зошто Кико">
+          {TRUST.map(t => (
+            <div key={t.title} style={styles.trustItem}>
+              <span style={styles.trustIcon} dangerouslySetInnerHTML={{ __html: ICONS[t.icon](22) }} />
+              <div>
+                <strong style={styles.trustTitle}>{t.title}</strong>
+                <span style={styles.trustText}>{t.text}</span>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {step === 1 && (
+        <section style={styles.panel} aria-label="Како работи">
+          <h2 style={styles.panelTitle}>Како работи</h2>
+          {HOW.map((h, n) => (
+            <div key={h.title} style={styles.trustItem}>
+              <span style={styles.stepNum} aria-hidden="true">{n + 1}</span>
+              <div>
+                <strong style={styles.trustTitle}>{h.title}</strong>
+                <span style={styles.trustText}>{h.text}</span>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {step === 1 && (
+        <nav style={styles.panel} aria-label="Водичи">
+          <h2 style={styles.panelTitle}>Пред да земеш кредит</h2>
           {FEATURED_GUIDES.map(g => (
             <a key={g.slug} href={`/vodici/${g.slug}/`} style={styles.guideLink}>
               <span style={styles.guideIcon} aria-hidden="true">{g.icon}</span>
@@ -207,8 +265,8 @@ const CustomerView = ({ onAdminClick }) => {
       )}
 
       {step === 1 && (
-        <nav style={styles.lendersNav} aria-label="Даватели">
-          <h2 style={styles.lendersTitle}>Кого споредуваме</h2>
+        <nav style={styles.panel} aria-label="Даватели">
+          <h2 style={styles.panelTitle}>Кого споредуваме</h2>
           {LENDER_GROUPS.map(g => (
             <div key={g.key} style={styles.lendersGroup}>
               <a href={g.href} style={styles.lendersGroupLink}>{g.label} ({g.items.length}) →</a>
@@ -232,11 +290,11 @@ const CustomerView = ({ onAdminClick }) => {
           </div>
 
           <div style={styles.disclaimerCard}>
-            <span style={styles.disclaimerIcon}>ℹ️</span>
+            <span style={styles.disclaimerIcon} dangerouslySetInnerHTML={{ __html: ICONS.scale(20) }} />
             <p style={styles.disclaimerText}>
-              Понудите се подредени по <strong>најнизок вкупен трошок</strong>.
+              Понудите се подредени по <strong>најнизок вкупен трошок</strong>; давателите не плаќаат за местото во листата.
               Со клик на „Аплицирај" одиш на страницата на институцијата; конечните услови се договараат директно со неа.
-              <br/><small style={{opacity: 0.7}}>Ажурирано: {DATA_UPDATED_LABEL}</small>
+              <br/><small style={{opacity: 0.8}}>Ажурирано: {DATA_UPDATED_LABEL}</small>
             </p>
           </div>
 
@@ -268,7 +326,7 @@ const CustomerView = ({ onAdminClick }) => {
                 ...(index === bestIndex ? styles.bestOffer : {})
               }}
             >
-              {index === bestIndex && <span style={styles.bestBadge}>⭐ Најповолно</span>}
+              {index === bestIndex && <span style={styles.bestBadge}>Најповолно</span>}
 
               <div style={styles.offerHeader}>
                 <span style={styles.institutionLogo}>{offer.logo}</span>
@@ -309,7 +367,7 @@ const CustomerView = ({ onAdminClick }) => {
                 onClick={() => trackClick(offer, amt, payment)}
                 style={styles.selectButton}
               >
-                Аплицирај кај {offer.name} →
+                Аплицирај кај {offer.name}{'\u00A0'}→
               </a>
               {!offer.svtVerified && (
                 <p style={styles.svtNote}>* СВТ не е објавена на сајтот на институцијата — пресметката е приближна.</p>
@@ -324,7 +382,7 @@ const CustomerView = ({ onAdminClick }) => {
       )}
 
       <footer style={styles.footer}>
-        <p suppressHydrationWarning>© {new Date().getFullYear()} KikoCredit.com - Твој кредитен советник</p>
+        <p suppressHydrationWarning>© {new Date().getFullYear()} KikoCredit.com — независна споредба на кредити</p>
         <p style={styles.footerSmall}>
           KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од
           официјалните страници на институциите; за точните услови важи понудата на самата институција.
@@ -333,6 +391,7 @@ const CustomerView = ({ onAdminClick }) => {
           Контакт: {CONTACT.name} · <a href={`mailto:${CONTACT.email}`} style={styles.footerLink}>{CONTACT.email}</a>
         </p>
       </footer>
+      </div>
     </div>
   );
 };
@@ -366,417 +425,152 @@ export default function KikoApp() {
   );
 }
 
+const FONT = "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif";
+const panelBase = {
+  background: BRAND.card,
+  border: `1px solid ${BRAND.border}`,
+  borderRadius: '16px',
+  boxShadow: '0 1px 2px rgba(27,26,61,0.04)',
+};
+
 const styles = {
   app: {
-    fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+    fontFamily: FONT,
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: BRAND.bg,
+    color: BRAND.text,
   },
-  container: {
-    maxWidth: '480px',
-    margin: '0 auto',
-    padding: '20px',
-    minHeight: '100vh',
+  page: { minHeight: '100vh' },
+
+  // ── горна лента со логото ──
+  topbar: { background: '#fff', borderBottom: `1px solid ${BRAND.border}` },
+  topbarInner: {
+    maxWidth: '480px', margin: '0 auto', padding: '8px 16px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
   },
-  header: {
-    textAlign: 'center',
-    marginBottom: '24px',
-    position: 'relative',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '12px',
-  },
-  logo: {
-    fontSize: '48px',
-  },
-  brandName: {
-    fontSize: '36px',
-    fontWeight: '800',
-    color: 'white',
-    margin: 0,
-    textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
-  },
-  tagline: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: '16px',
-    marginTop: '8px',
-  },
+  logoLink: { display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none', minWidth: 0 },
+  logoMark: { display: 'inline-flex', lineHeight: 0 },
+  brandName: { display: 'block', lineHeight: 0 },
+  brandDescriptor: { display: 'block', fontSize: '12px', color: BRAND.muted, marginTop: '3px', lineHeight: 1.2, letterSpacing: '0.2px' },
   adminButton: {
-    position: 'absolute',
-    top: '0',
-    right: '0',
-    background: 'rgba(255,255,255,0.2)',
-    border: 'none',
-    borderRadius: '50%',
-    width: '40px',
-    height: '40px',
-    fontSize: '20px',
-    cursor: 'pointer',
+    background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '10px', flexShrink: 0,
+    width: '36px', height: '36px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
   },
-  progressContainer: {
-    marginBottom: '24px',
-  },
-  progressBar: {
-    height: '4px',
-    background: 'rgba(255,255,255,0.3)',
-    borderRadius: '2px',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    background: 'white',
-    transition: 'width 0.3s ease',
-  },
-  progressSteps: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginTop: '8px',
-    fontSize: '12px',
-  },
-  activeStep: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  inactiveStep: {
-    color: 'rgba(255,255,255,0.5)',
-  },
-  card: {
-    background: 'white',
-    borderRadius: '24px',
-    padding: '32px 24px',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-  },
-  cardTitle: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: '24px',
-    textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: '20px',
-  },
-  label: {
-    display: 'block',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: '8px',
-  },
+
+  // ── воведен дел ──
+  hero: { background: BRAND.primaryDark, paddingBottom: '52px' },
+  heroInner: { maxWidth: '480px', margin: '0 auto', padding: '14px 16px 0' },
+  heroTitle: { color: '#fff', fontSize: '24px', lineHeight: 1.25, fontWeight: '800', margin: '8px 0 8px', letterSpacing: '-0.2px' },
+  heroSub: { color: 'rgba(255,255,255,0.88)', fontSize: '15px', lineHeight: 1.45, margin: '0 0 18px' },
+  progressContainer: { margin: '8px 0 0' },
+  progressBar: { height: '4px', background: 'rgba(255,255,255,0.25)', borderRadius: '2px', overflow: 'hidden' },
+  progressFill: { height: '100%', background: BRAND.accent, transition: 'width 0.3s ease' },
+  progressSteps: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '13px' },
+  activeStep: { color: '#fff', fontWeight: '700' },
+  inactiveStep: { color: 'rgba(255,255,255,0.75)' },
+
+  container: { maxWidth: '480px', margin: '-36px auto 0', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '16px' },
+
+  // ── калкулатор ──
+  card: { ...panelBase, padding: '24px 20px', boxShadow: '0 10px 30px rgba(27,26,61,0.12)' },
+  cardTitle: { fontSize: '22px', fontWeight: '800', color: BRAND.ink, margin: '0 0 20px', textAlign: 'center' },
+  inputGroup: { marginBottom: '16px' },
+  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: BRAND.text, marginBottom: '8px' },
   input: {
-    width: '100%',
-    padding: '16px',
-    fontSize: '18px',
-    border: '2px solid #e0e0e0',
-    borderRadius: '12px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    boxSizing: 'border-box',
+    width: '100%', padding: '15px 16px', fontSize: '18px', color: BRAND.ink, background: '#fff',
+    border: `2px solid ${BRAND.border}`, borderRadius: '12px', outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box',
   },
   primaryButton: {
-    width: '100%',
-    padding: '18px',
-    fontSize: '18px',
-    fontWeight: '700',
-    color: 'white',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    marginTop: '12px',
+    width: '100%', padding: '17px', fontSize: '18px', fontWeight: '700', color: '#fff', background: BRAND.primary,
+    border: 'none', borderRadius: '12px', cursor: 'pointer', marginTop: '8px',
   },
-  legalNote: {
-    marginTop: '16px',
-    marginBottom: 0,
-    fontSize: '12px',
-    color: '#888',
-    textAlign: 'center',
-    lineHeight: '1.4',
+  legalNote: { margin: '14px 0 0', fontSize: '12px', color: BRAND.muted, textAlign: 'center', lineHeight: 1.45 },
+
+  // ── знаци на доверба, „како работи“, водичи, даватели ──
+  panel: { ...panelBase, padding: '18px 18px', display: 'flex', flexDirection: 'column', gap: '14px' },
+  panelTitle: { color: BRAND.ink, fontSize: '17px', fontWeight: '800', margin: 0 },
+  trustItem: { display: 'flex', alignItems: 'flex-start', gap: '12px' },
+  trustIcon: {
+    flexShrink: 0, width: '38px', height: '38px', borderRadius: '10px', background: BRAND.primarySoft,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0,
   },
-  backButton: {
-    width: '100%',
-    padding: '14px',
-    fontSize: '16px',
-    color: '#666',
-    background: 'transparent',
-    border: '2px solid #e0e0e0',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    marginTop: '12px',
+  stepNum: {
+    flexShrink: 0, width: '38px', height: '38px', borderRadius: '50%', background: BRAND.primaryDark, color: '#fff',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '800',
   },
-  resultsContainer: {
-    paddingBottom: '20px',
-  },
-  summaryCard: {
-    background: 'white',
-    borderRadius: '16px',
-    padding: '16px',
-    marginBottom: '16px',
-    textAlign: 'center',
-  },
-  summaryText: {
-    margin: 0,
-    fontSize: '16px',
-    color: '#333',
-  },
-  disclaimerCard: {
-    background: 'rgba(255,255,255,0.9)',
-    borderRadius: '12px',
-    padding: '12px 16px',
-    marginBottom: '16px',
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '10px',
-  },
-  disclaimerIcon: {
-    fontSize: '20px',
-  },
-  disclaimerText: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#555',
-    lineHeight: '1.4',
-  },
-  filterRow: {
-    display: 'flex',
-    gap: '8px',
-    marginBottom: '16px',
-    flexWrap: 'wrap',
-  },
-  filterChip: {
-    flex: 1,
-    minWidth: '90px',
-    padding: '10px 12px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: 'white',
-    background: 'rgba(255,255,255,0.18)',
-    border: '2px solid rgba(255,255,255,0.35)',
-    borderRadius: '20px',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  filterChipActive: {
-    background: 'white',
-    color: '#5a4fb0',
-    border: '2px solid white',
-  },
-  filterCount: {
-    opacity: 0.75,
-    fontWeight: '500',
-    fontSize: '12px',
-    marginLeft: '4px',
-  },
-  sectionTitle: {
-    color: 'white',
-    fontSize: '18px',
-    fontWeight: '600',
-    marginBottom: '16px',
-  },
-  offerCard: {
-    background: 'white',
-    borderRadius: '20px',
-    padding: '20px',
-    marginBottom: '16px',
-    position: 'relative',
-    transition: 'transform 0.2s, box-shadow 0.2s',
-  },
-  bestOffer: {
-    border: '3px solid #4CAF50',
-    boxShadow: '0 8px 30px rgba(76, 175, 80, 0.3)',
-  },
-  bestBadge: {
-    position: 'absolute',
-    top: '-12px',
-    left: '20px',
-    background: '#4CAF50',
-    color: 'white',
-    padding: '4px 12px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '700',
-  },
-  offerHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '16px',
-  },
-  institutionLogo: {
-    fontSize: '32px',
-  },
-  institutionName: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#333',
-    display: 'block',
-  },
-  financeBadge: {
-    fontSize: '11px',
-    color: '#9c27b0',
-    background: '#f3e5f5',
-    padding: '2px 8px',
-    borderRadius: '10px',
-  },
-  offerDetails: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '12px',
-    marginBottom: '16px',
-  },
-  offerDetail: {
-    textAlign: 'center',
-    padding: '8px',
-    background: '#f5f5f5',
-    borderRadius: '8px',
-  },
-  detailLabel: {
-    display: 'block',
-    fontSize: '11px',
-    color: '#888',
-    marginBottom: '4px',
-  },
-  detailValue: {
-    display: 'block',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#333',
-  },
-  detailValueHighlight: {
-    display: 'block',
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#e53935',
-  },
-  totalRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: '12px',
-    borderTop: '2px dashed #eee',
-    marginBottom: '12px',
-  },
-  totalAmount: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#333',
-  },
-  selectButton: {
-    display: 'block',
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    color: 'white',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    border: 'none',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    textAlign: 'center',
-    textDecoration: 'none',
-    boxSizing: 'border-box',
-  },
-  svtNote: {
-    margin: '10px 0 0',
-    fontSize: '11px',
-    color: '#999',
-    lineHeight: '1.4',
-  },
+  trustTitle: { display: 'block', fontSize: '15px', color: BRAND.ink, lineHeight: 1.3 },
+  trustText: { display: 'block', fontSize: '13.5px', color: BRAND.muted, lineHeight: 1.45, marginTop: '2px' },
+
   guideLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '14px 16px',
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.3)',
-    borderRadius: '16px',
-    color: 'white',
-    textDecoration: 'none',
+    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: BRAND.bg,
+    border: `1px solid ${BRAND.border}`, borderRadius: '12px', color: BRAND.ink, textDecoration: 'none',
   },
-  guideIcon: {
-    fontSize: '22px',
-    lineHeight: 1,
-    flexShrink: 0,
-  },
-  guideTitle: {
-    flex: 1,
-    fontSize: '15px',
-    fontWeight: '600',
-    lineHeight: '1.35',
-  },
-  guideArrow: {
-    fontSize: '16px',
-    opacity: 0.8,
-    flexShrink: 0,
-  },
-  lendersNav: {
-    marginTop: '24px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
-  },
-  lendersTitle: {
-    color: 'white',
-    fontSize: '18px',
-    fontWeight: '600',
-    margin: 0,
-  },
-  lendersGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  lendersGroupLink: {
-    color: 'white',
-    fontSize: '14px',
-    fontWeight: '600',
-    textDecoration: 'none',
-  },
-  lendersRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '6px',
-  },
+  guideIcon: { fontSize: '20px', lineHeight: 1, flexShrink: 0 },
+  guideTitle: { flex: 1, fontSize: '15px', fontWeight: '600', lineHeight: 1.35 },
+  guideArrow: { fontSize: '16px', color: BRAND.primary, flexShrink: 0 },
+  lendersGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  lendersGroupLink: { color: BRAND.primary, fontSize: '14px', fontWeight: '700', textDecoration: 'none' },
+  lendersRow: { display: 'flex', flexWrap: 'wrap', gap: '6px' },
   lenderChip: {
-    fontSize: '13px',
-    color: 'white',
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.3)',
-    borderRadius: '14px',
-    padding: '4px 10px',
-    textDecoration: 'none',
+    fontSize: '13px', color: BRAND.text, background: BRAND.bg, border: `1px solid ${BRAND.border}`,
+    borderRadius: '14px', padding: '4px 10px', textDecoration: 'none',
   },
   lendersAll: {
-    color: 'white',
-    fontSize: '14px',
-    fontWeight: '600',
-    textAlign: 'center',
-    background: 'rgba(255,255,255,0.2)',
-    borderRadius: '12px',
-    padding: '12px',
-    textDecoration: 'none',
+    color: BRAND.primary, fontSize: '14px', fontWeight: '700', textAlign: 'center', background: BRAND.primarySoft,
+    borderRadius: '12px', padding: '12px', textDecoration: 'none',
   },
-  footer: {
-    textAlign: 'center',
-    padding: '20px',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '12px',
+
+  // ── понуди ──
+  resultsContainer: { display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '8px' },
+  summaryCard: { ...panelBase, padding: '16px', textAlign: 'center', boxShadow: '0 10px 30px rgba(27,26,61,0.12)' },
+  summaryText: { margin: 0, fontSize: '16px', color: BRAND.ink },
+  disclaimerCard: { ...panelBase, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: '10px' },
+  disclaimerIcon: { flexShrink: 0, lineHeight: 0, marginTop: '1px' },
+  disclaimerText: { margin: 0, fontSize: '13px', color: BRAND.text, lineHeight: 1.45 },
+  filterRow: { display: 'flex', gap: '6px' },
+  filterChip: {
+    flex: '1 1 auto', minWidth: 0, padding: '10px 4px', fontSize: '13px', fontWeight: '600', color: BRAND.text,
+    background: '#fff', border: `2px solid ${BRAND.border}`, borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
   },
-  footerContact: {
-    fontSize: '12px',
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: '10px',
+  filterChipActive: { background: BRAND.primary, color: '#fff', border: `2px solid ${BRAND.primary}` },
+  filterCount: { opacity: 0.8, fontWeight: '500', fontSize: '12px', marginLeft: '2px' },
+  sectionTitle: { color: BRAND.ink, fontSize: '18px', fontWeight: '800', margin: '6px 0 0' },
+  offerCard: { ...panelBase, padding: '18px', position: 'relative' },
+  bestOffer: { border: `2px solid ${BRAND.success}`, boxShadow: '0 8px 24px rgba(21,128,61,0.18)', marginTop: '8px' },
+  bestBadge: {
+    position: 'absolute', top: '-12px', left: '18px', background: BRAND.success, color: '#fff',
+    padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
   },
-  footerLink: {
-    color: 'white',
+  offerHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' },
+  institutionLogo: {
+    fontSize: '26px', width: '46px', height: '46px', borderRadius: '12px', background: BRAND.bg, border: `1px solid ${BRAND.border}`,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1,
   },
-  footerSmall: {
-    fontSize: '11px',
-    color: 'rgba(255,255,255,0.5)',
-    lineHeight: '1.4',
-    marginTop: '8px',
+  institutionName: { fontSize: '18px', fontWeight: '700', color: BRAND.ink, display: 'block' },
+  financeBadge: { fontSize: '11px', color: BRAND.primary, background: BRAND.primarySoft, padding: '2px 8px', borderRadius: '10px' },
+  offerDetails: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' },
+  offerDetail: { textAlign: 'center', padding: '8px', background: BRAND.bg, borderRadius: '10px' },
+  detailLabel: { display: 'block', fontSize: '11.5px', color: BRAND.muted, marginBottom: '4px' },
+  detailValue: { display: 'block', fontSize: '15px', fontWeight: '700', color: BRAND.ink },
+  detailValueHighlight: { display: 'block', fontSize: '15px', fontWeight: '700', color: BRAND.danger },
+  totalRow: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', paddingTop: '12px',
+    borderTop: `1px dashed ${BRAND.border}`, marginBottom: '12px', color: BRAND.text,
   },
+  totalAmount: { fontSize: '20px', fontWeight: '800', color: BRAND.ink, whiteSpace: 'nowrap' },
+  selectButton: {
+    display: 'block', width: '100%', padding: '13px 12px', fontSize: '16px', fontWeight: '700', color: '#fff', background: BRAND.primary,
+    border: 'none', borderRadius: '12px', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box',
+  },
+  svtNote: { margin: '10px 0 0', fontSize: '11.5px', color: BRAND.muted, lineHeight: 1.4 },
+  backButton: {
+    width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', color: BRAND.primary, background: '#fff',
+    border: `2px solid ${BRAND.border}`, borderRadius: '12px', cursor: 'pointer',
+  },
+
+  // ── подножје ──
+  footer: { textAlign: 'center', padding: '12px 8px 24px', color: BRAND.muted, fontSize: '12px', lineHeight: 1.5 },
+  footerSmall: { fontSize: '11.5px', color: BRAND.muted, lineHeight: 1.45, marginTop: '8px' },
+  footerContact: { fontSize: '12px', color: BRAND.muted, marginTop: '10px' },
+  footerLink: { color: BRAND.primary },
 };
