@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { typeLabel } from './institutions.js';
+import { BRAND, faviconSvg } from './brand.js';
 
 // ============================================================================
 //  Статистика — kikocredit.com/#admin (или копчето ⚙️)
@@ -96,7 +97,7 @@ export default function StatsView({ onClose, endpoint }) {
     <div style={s.container}>
       <header style={s.header}>
         <div style={s.logoRow}>
-          <span style={s.logo}>🦊</span>
+          <span style={s.logo} dangerouslySetInnerHTML={{ __html: faviconSvg() }} />
           <h1 style={s.brand}>Кико</h1>
           <span style={s.badge}>Статистика</span>
         </div>
@@ -121,7 +122,7 @@ export default function StatsView({ onClose, endpoint }) {
             <div style={s.stat}><span style={s.statNum}>{data?.totals?.total ?? 0}</span><span style={s.statLabel}>вкупно кликови</span></div>
             <div style={s.stat}><span style={s.statNum}>{data?.totals?.last30 ?? 0}</span><span style={s.statLabel}>30 дена</span></div>
             <div style={s.stat}><span style={s.statNum}>{data?.totals?.last7 ?? 0}</span><span style={s.statLabel}>7 дена</span></div>
-            <div style={s.stat}><span style={{ ...s.statNum, color: '#4a4a8a' }}>{data?.totals?.today ?? 0}</span><span style={s.statLabel}>денес</span></div>
+            <div style={s.stat}><span style={{ ...s.statNum, color: BRAND.primary }}>{data?.totals?.today ?? 0}</span><span style={s.statLabel}>денес</span></div>
           </div>
 
           <p style={s.sourceLine}>
@@ -205,43 +206,43 @@ export default function StatsView({ onClose, endpoint }) {
 }
 
 const s = {
-  container: { maxWidth: '760px', margin: '0 auto', padding: '20px', minHeight: '100vh', fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif" },
+  container: { maxWidth: '760px', margin: '0 auto', padding: '20px', minHeight: '100vh', fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif", color: BRAND.text },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' },
   logoRow: { display: 'flex', alignItems: 'center', gap: '10px' },
-  logo: { fontSize: '36px' },
-  brand: { fontSize: '28px', fontWeight: '800', color: 'white', margin: 0, textShadow: '2px 2px 4px rgba(0,0,0,0.2)' },
-  badge: { background: 'rgba(255,255,255,0.2)', color: 'white', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
-  closeBtn: { background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '18px', color: 'white', cursor: 'pointer' },
-  card: { background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', marginBottom: '16px' },
-  cardTitle: { fontSize: '22px', fontWeight: '700', color: '#333', marginBottom: '20px', textAlign: 'center' },
-  h3: { margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#333' },
-  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#555', marginBottom: '8px' },
-  input: { width: '100%', padding: '12px 14px', fontSize: '15px', border: '2px solid #e0e0e0', borderRadius: '12px', outline: 'none', boxSizing: 'border-box', background: 'white' },
-  primaryBtn: { width: '100%', padding: '16px', fontSize: '17px', fontWeight: '700', color: 'white', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '12px', cursor: 'pointer', marginTop: '16px' },
-  secondaryBtn: { padding: '12px 14px', fontSize: '14px', fontWeight: '600', color: '#4a4a8a', background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', cursor: 'pointer', whiteSpace: 'nowrap' },
-  error: { color: '#c62828', fontSize: '14px', marginTop: '12px', textAlign: 'center' },
-  errorBanner: { background: '#ffebee', color: '#c62828', padding: '10px 14px', borderRadius: '12px', fontSize: '14px' },
+  logo: { display: 'inline-block', width: '40px', height: '40px', lineHeight: 0 },
+  brand: { fontSize: '26px', fontWeight: '800', color: BRAND.ink, margin: 0, letterSpacing: '-0.3px' },
+  badge: { background: BRAND.primarySoft, color: BRAND.primary, padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700' },
+  closeBtn: { background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '50%', width: '40px', height: '40px', fontSize: '18px', color: BRAND.text, cursor: 'pointer' },
+  card: { background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '16px', padding: '22px', boxShadow: '0 1px 2px rgba(27,26,61,0.04)', marginBottom: '16px' },
+  cardTitle: { fontSize: '22px', fontWeight: '800', color: BRAND.ink, marginBottom: '20px', textAlign: 'center' },
+  h3: { margin: '0 0 14px', fontSize: '16px', fontWeight: '800', color: BRAND.ink },
+  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: BRAND.text, marginBottom: '8px' },
+  input: { width: '100%', padding: '12px 14px', fontSize: '15px', border: `2px solid ${BRAND.border}`, borderRadius: '12px', outline: 'none', boxSizing: 'border-box', background: 'white' },
+  primaryBtn: { width: '100%', padding: '16px', fontSize: '17px', fontWeight: '700', color: 'white', background: BRAND.primary, border: 'none', borderRadius: '12px', cursor: 'pointer', marginTop: '16px' },
+  secondaryBtn: { padding: '12px 14px', fontSize: '14px', fontWeight: '600', color: BRAND.primary, background: 'white', border: `2px solid ${BRAND.border}`, borderRadius: '12px', cursor: 'pointer', whiteSpace: 'nowrap' },
+  error: { color: BRAND.danger, fontSize: '14px', marginTop: '12px', textAlign: 'center' },
+  errorBanner: { background: '#FDECEA', color: BRAND.danger, padding: '10px 14px', borderRadius: '12px', fontSize: '14px' },
   statsRow: { display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' },
-  stat: { flex: 1, minWidth: '76px', background: 'rgba(255,255,255,0.92)', borderRadius: '16px', padding: '12px', textAlign: 'center' },
-  statNum: { display: 'block', fontSize: '24px', fontWeight: '800', color: '#333' },
-  statLabel: { fontSize: '11px', color: '#777' },
-  sourceLine: { margin: '0 0 14px', padding: '10px 14px', background: 'rgba(255,255,255,0.92)', borderRadius: '16px', fontSize: '13px', color: '#555', textAlign: 'center' },
+  stat: { flex: 1, minWidth: '76px', background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '14px', padding: '12px', textAlign: 'center' },
+  statNum: { display: 'block', fontSize: '24px', fontWeight: '800', color: BRAND.ink },
+  statLabel: { fontSize: '11.5px', color: BRAND.muted },
+  sourceLine: { margin: '0 0 14px', padding: '10px 14px', background: '#fff', border: `1px solid ${BRAND.border}`, borderRadius: '14px', fontSize: '13px', color: BRAND.text, textAlign: 'center' },
   toolbar: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' },
   bars: { display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100px', overflowX: 'auto' },
   barCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '18px', flex: 1 },
-  bar: { width: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '4px 4px 0 0' },
-  barLabel: { fontSize: '10px', color: '#999' },
-  instRow: { padding: '12px 0', borderTop: '1px solid #f0f0f0' },
+  bar: { width: '100%', background: BRAND.primary, borderRadius: '4px 4px 0 0' },
+  barLabel: { fontSize: '10px', color: BRAND.muted },
+  instRow: { padding: '12px 0', borderTop: `1px solid ${BRAND.border}` },
   instHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '6px' },
-  instName: { display: 'block', fontSize: '15px', color: '#333' },
-  instType: { fontSize: '11px', color: '#9c27b0', background: '#f3e5f5', padding: '2px 8px', borderRadius: '10px' },
-  instClicks: { fontSize: '18px', fontWeight: '800', color: '#333', whiteSpace: 'nowrap' },
-  track: { height: '6px', background: '#f0f0f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' },
-  fill: { height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  instMeta: { display: 'flex', flexWrap: 'wrap', gap: '6px 16px', fontSize: '12px', color: '#666' },
-  recentRow: { display: 'grid', gridTemplateColumns: '110px 1fr', gap: '2px 10px', padding: '8px 0', borderTop: '1px solid #f0f0f0', fontSize: '13px' },
-  recentTime: { color: '#888', fontSize: '12px', gridRow: 'span 2' },
-  recentName: { fontWeight: '600', color: '#333' },
-  recentVals: { color: '#666', fontSize: '12px' },
-  footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' },
+  instName: { display: 'block', fontSize: '15px', color: BRAND.ink },
+  instType: { fontSize: '11px', color: BRAND.primary, background: BRAND.primarySoft, padding: '2px 8px', borderRadius: '10px' },
+  instClicks: { fontSize: '18px', fontWeight: '800', color: BRAND.ink, whiteSpace: 'nowrap' },
+  track: { height: '6px', background: BRAND.bg, borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' },
+  fill: { height: '100%', background: BRAND.primary },
+  instMeta: { display: 'flex', flexWrap: 'wrap', gap: '6px 16px', fontSize: '12px', color: BRAND.muted },
+  recentRow: { display: 'grid', gridTemplateColumns: '110px 1fr', gap: '2px 10px', padding: '8px 0', borderTop: `1px solid ${BRAND.border}`, fontSize: '13px' },
+  recentTime: { color: BRAND.muted, fontSize: '12px', gridRow: 'span 2' },
+  recentName: { fontWeight: '600', color: BRAND.ink },
+  recentVals: { color: BRAND.muted, fontSize: '12px' },
+  footer: { textAlign: 'center', padding: '20px', color: BRAND.muted, fontSize: '12px' },
 };

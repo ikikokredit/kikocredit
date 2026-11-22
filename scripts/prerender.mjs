@@ -20,6 +20,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync }
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GUIDES, guidePath, GUIDES_UPDATED, PENALTY_RATE } from './guides.mjs';
+import { BRAND as B, foxSvg, faviconSvg, ICONS } from '../src/brand.js';
 import {
   activeInstitutions, financialInstitutions, typeLabel, DATA_UPDATED,
 } from '../src/institutions.js';
@@ -97,49 +98,58 @@ if(navigator.sendBeacon)navigator.sendBeacon('/api/clicks',new Blob([p],{type:'a
 else fetch('/api/clicks',{method:'POST',headers:{'Content-Type':'application/json'},body:p,keepalive:true}).catch(function(){});}catch(_){}});</script>`;
 
 const CSS = `*{box-sizing:border-box}
-body{margin:0;font-family:'Segoe UI','Roboto','Helvetica Neue',sans-serif;color:#333;line-height:1.5}
-.app{min-height:100vh;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
-.container{max-width:600px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:20px}
-.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
-a{color:#5a4fb0}
-.header{text-align:center}
-.logo-link{display:inline-flex;align-items:center;gap:12px;text-decoration:none}
-.logo{font-size:48px;line-height:1}
-.brand{font-size:36px;font-weight:800;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,.2)}
-.tagline{color:rgba(255,255,255,.9);font-size:16px;margin:8px 0 0}
-.crumbs{font-size:13px;color:rgba(255,255,255,.75)}
-.crumbs a{color:#fff;text-decoration:none}
+body{margin:0;font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;color:${B.text};line-height:1.5;background:${B.bg}}
+.app{min-height:100vh;background:${B.bg}}
+.topbar{background:${B.primaryDark}}
+.topbar-in{max-width:600px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo-link{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+.logo-link svg{display:block}
+.brand{display:block;font-size:24px;font-weight:800;color:#fff;line-height:1;letter-spacing:-.3px}
+.descriptor{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:4px;line-height:1.2}
+.top-cta{font-size:14px;font-weight:700;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 12px;white-space:nowrap}
+.top-cta:hover{background:rgba(255,255,255,.12)}
+.trustbar{background:${B.primaryDark};border-top:1px solid rgba(255,255,255,.12)}
+.trustbar-in{max-width:600px;margin:0 auto;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:rgba(255,255,255,.9)}
+.trustbar span{display:inline-flex;align-items:center;gap:6px}
+.container{max-width:600px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+a{color:${B.primary}}
+.crumbs{font-size:13px;color:${B.muted}}
+.crumbs a{color:${B.primary};text-decoration:none}
 .crumbs a:hover{text-decoration:underline}
-.card{background:#fff;border-radius:24px;padding:28px 22px;box-shadow:0 20px 60px rgba(0,0,0,.15);display:flex;flex-direction:column;gap:16px;min-width:0}
-.card h1{font-size:24px;font-weight:700;margin:0;line-height:1.25}
-.card h2{font-size:18px;font-weight:700;margin:4px 0 0}
+.card{background:#fff;border:1px solid ${B.border};border-radius:16px;padding:24px 20px;box-shadow:0 1px 2px rgba(27,26,61,.04);display:flex;flex-direction:column;gap:16px;min-width:0}
+.card h1{font-size:24px;font-weight:800;margin:0;line-height:1.25;color:${B.ink}}
+.card h2{font-size:18px;font-weight:800;margin:4px 0 0;color:${B.ink}}
+.card h3{color:${B.ink}}
 .card p{margin:0}
-.lead{color:#555;font-size:15px}
+.lead{color:${B.text};font-size:15px}
 .ident{display:flex;align-items:center;gap:12px}
-.ident .emoji{font-size:32px;line-height:1}
-.ident .name{font-size:18px;font-weight:700;display:block}
-.badge{font-size:11px;color:#9c27b0;background:#f3e5f5;padding:2px 8px;border-radius:10px}
-.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fact{text-align:center;padding:10px 8px;background:#f5f5f5;border-radius:8px}
-.fact .k{display:block;font-size:11px;color:#888;margin-bottom:4px}
-.fact .v{display:block;font-size:15px;font-weight:600;color:#333}
-.example{background:#f4f2fd;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
-.example .total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:2px dashed #ddd8f5;padding-top:10px;font-weight:600}
-.example .total span:last-child{font-size:20px;font-weight:800}
-.btn-out{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:16px;color:#5a4fb0;background:#fff;border:2px solid #d9d4f5;border-radius:12px;padding:14px}
-.btn-out:hover{border-color:#5a4fb0}
-.btn{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:17px;color:#fff;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:12px;padding:16px}
-.small{font-size:12px;color:#888}
-.note{font-size:12px;color:#999}
-.section-title{color:#fff;font-size:18px;font-weight:600;margin:0}
+.ident .emoji{font-size:26px;line-height:1;width:46px;height:46px;border-radius:12px;background:${B.bg};border:1px solid ${B.border};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ident .name{font-size:18px;font-weight:700;display:block;color:${B.ink}}
+.badge{font-size:11px;color:${B.primary};background:${B.primarySoft};padding:2px 8px;border-radius:10px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fact{text-align:center;padding:10px 8px;background:${B.bg};border-radius:10px}
+.fact .k{display:block;font-size:11.5px;color:${B.muted};margin-bottom:4px}
+.fact .v{display:block;font-size:15px;font-weight:700;color:${B.ink}}
+.example{background:${B.primarySoft};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.example .total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px dashed #cfcdf0;padding-top:10px;font-weight:600}
+.example .total span:last-child{font-size:20px;font-weight:800;color:${B.ink}}
+.btn-out{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:16px;color:${B.primary};background:#fff;border:2px solid ${B.primary};border-radius:12px;padding:13px}
+.btn-out:hover{background:${B.primarySoft}}
+.btn{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:17px;color:#fff;background:${B.primary};border-radius:12px;padding:15px}
+.btn:hover{background:${B.primaryDark}}
+.small{font-size:12px;color:${B.muted}}
+.note{font-size:12px;color:${B.muted}}
+.section{display:flex;flex-direction:column;gap:10px}
+.section-title{color:${B.ink};font-size:17px;font-weight:800;margin:0}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font-size:13px;color:#fff;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:4px 10px;text-decoration:none}
-.chip:hover{background:rgba(255,255,255,.28)}
-.white-link{color:#fff;font-weight:600;text-decoration:none}
+.chip{font-size:13px;color:${B.text};background:#fff;border:1px solid ${B.border};border-radius:14px;padding:5px 11px;text-decoration:none}
+.chip:hover{border-color:${B.primary};color:${B.primary}}
+.white-link{display:block;text-align:center;color:${B.primary};font-weight:700;font-size:14px;text-decoration:none;background:${B.primarySoft};border-radius:12px;padding:12px}
 .table-wrap{overflow-x:auto;margin:0 -6px}
 table{border-collapse:collapse;width:100%;min-width:420px;font-size:14px}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#888;font-weight:600;text-align:left;padding:8px 6px;border-bottom:2px solid #eee}
-td{padding:10px 6px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:${B.muted};font-weight:700;text-align:left;padding:8px 6px;border-bottom:2px solid ${B.border}}
+td{padding:10px 6px;border-bottom:1px solid ${B.border};vertical-align:top}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td a{font-weight:600;text-decoration:none}
 .faq{display:flex;flex-direction:column;gap:14px}
@@ -150,18 +160,23 @@ table.fit td,table.fit th{padding:8px 4px}
 .prose h2{margin-top:10px}
 .prose ul,.prose ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
 .prose li{padding-left:2px}
-.sources{margin:0;padding-left:18px;font-size:12px;color:#888;display:flex;flex-direction:column;gap:4px}
-.sources a{color:#888;word-break:break-word}
+.sources{margin:0;padding-left:18px;font-size:12px;color:${B.muted};display:flex;flex-direction:column;gap:4px}
+.sources a{color:${B.muted};word-break:break-word}
 .guide-list{display:flex;flex-direction:column;gap:12px}
-.guide-item{display:block;text-decoration:none;color:inherit;background:#f4f2fd;border-radius:16px;padding:16px}
-.guide-item strong{display:block;font-size:16px;color:#5a4fb0;margin-bottom:4px}
-.guide-item span{font-size:14px;color:#555}
-.footer{text-align:center;color:rgba(255,255,255,.6);font-size:12px;padding:8px 0 12px}
+.guide-item{display:block;text-decoration:none;color:inherit;background:${B.bg};border:1px solid ${B.border};border-radius:14px;padding:16px}
+.guide-item:hover{border-color:${B.primary}}
+.guide-item strong{display:block;font-size:16px;color:${B.primary};margin-bottom:4px}
+.guide-item span{font-size:14px;color:${B.text}}
+.footer{text-align:center;color:${B.muted};font-size:12px;padding:4px 0 16px}
 .footer p{margin:0}
-.footer .small{color:rgba(255,255,255,.5);font-size:11px;margin-top:8px}
-.footer .contact{color:rgba(255,255,255,.75);margin-top:10px}
-.footer .contact a{color:#fff}
-@media (max-width:420px){.card{padding:24px 16px}.brand{font-size:30px}.logo{font-size:40px}}`;
+.footer .small{color:${B.muted};font-size:11.5px;margin-top:8px}
+.footer .contact{margin-top:10px}
+.footer .contact a{color:${B.primary}}
+@media (max-width:420px){.card{padding:20px 16px}.top-cta{padding:7px 10px;font-size:13px}}`;
+
+// Лента под логото на секоја статична страница — кратки знаци на доверба (исти тврдења како на почетната).
+const TRUSTBAR = ['Независна споредба', 'Без лични податоци', 'Услови од официјалните страници']
+  .map((t) => `<span>${ICONS.check(14, '#9FE3B4')}${t}</span>`).join('');
 
 function layout({ path, title, description, crumbs, main, jsonLd, ogType = 'website' }) {
   const url = SITE + path;
@@ -196,23 +211,26 @@ ${GA}
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${SITE}/og-image.png">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
-<meta name="theme-color" content="#667eea">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="${B.primaryDark}">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <style>${CSS}</style>
 </head>
 <body>
-<div class="app"><div class="container">
-<header class="header">
-<a href="/" class="logo-link" aria-label="KikoCredit — почетна"><span class="logo">🦊</span><span class="brand">Кико</span></a>
-<p class="tagline">Најди го најдобриот кредит за тебе</p>
-</header>
+<div class="app">
+<header class="topbar"><div class="topbar-in">
+<a href="/" class="logo-link" aria-label="KikoCredit — почетна">${foxSvg(38)}<span><span class="brand">${B.name}</span><span class="descriptor">${B.descriptor}</span></span></a>
+<a class="top-cta" href="/">Спореди понуди →</a>
+</div></header>
+<div class="trustbar"><div class="trustbar-in">${TRUSTBAR}</div></div>
+<div class="container">
 <nav class="crumbs" aria-label="Каде си">${crumbHtml}</nav>
 <main class="stack">
 ${main}
 </main>
 <footer class="footer">
-<p>© ${YEAR} KikoCredit.com - Твој кредитен советник</p>
+<p>© ${YEAR} KikoCredit.com — независна споредба на кредити</p>
 <p class="small">KikoCredit не е давател на кредит и не наплаќа ништо од корисниците. Податоците се преземени од официјалните страници на институциите; за точните услови важи понудата на самата институција.</p>
 <p class="contact">Контакт: ${esc(CONTACT.name)} · <a href="mailto:${CONTACT.email}">${CONTACT.email}</a></p>
 </footer>
@@ -256,8 +274,8 @@ const ctaCalc = `<a class="btn" href="/">Пресметај рата за тво
 
 // Бела лента со линкови до водичите (на збирните страници и кај давателите)
 const CRUMB_GUIDES = { name: 'Водичи', path: '/vodici/' };
-const guidesNav = (except) => `<section style="display:flex;flex-direction:column;gap:10px">
-<h2 class="section-title">📚 Водичи</h2>
+const guidesNav = (except) => `<section class="section">
+<h2 class="section-title">Водичи</h2>
 <div class="chips">${GUIDES.filter((g) => g.slug !== except).map((g) => `<a class="chip" href="${guidePath(g)}">${g.icon} ${esc(g.short)}</a>`).join('')}</div>
 </section>`;
 
@@ -357,7 +375,7 @@ function lenderPage(i) {
 <a href="${esc(i.notice.guide)}"><strong>Што значи ова за клиентите →</strong></a>
 </div>` : '';
   const applyHtml = paused
-    ? `<p class="btn-out" style="color:#888;border-style:dashed;margin:0">Апликациите се привремено исклучени</p>`
+    ? `<p class="btn-out" style="color:${B.muted};border-color:${B.border};border-style:dashed;margin:0">Апликациите се привремено исклучени</p>`
     : `<a class="btn-out" href="${esc(i.applyUrl)}" data-ga-inst="${esc(i.name)}" data-ga-type="${i.type}" data-ga-id="${i.id}" target="_blank" rel="noopener noreferrer nofollow">Оди на страницата на ${esc(i.name)} ↗</a>`;
 
   const exampleHtml = ex ? `<div class="example">
@@ -390,7 +408,7 @@ ${applyHtml}
 <p class="small">Официјален сајт: <a href="https://${esc(i.website)}/" target="_blank" rel="noopener nofollow">${esc(i.website)}</a> · Извор на условите: <a href="${esc(i.source)}" target="_blank" rel="noopener nofollow">${esc(host(i.source))}</a></p>
 ${i.svtVerified ? '' : svtNote}
 </article>
-<section style="display:flex;flex-direction:column;gap:10px">
+<section class="section">
 <h2 class="section-title">Спореди со други: ${esc(g.short.toLowerCase())}</h2>
 <div class="chips">${others.map((o) => `<a class="chip" href="${lenderPath(o)}">${esc(o.name)}</a>`).join('')}</div>
 <a class="white-link" href="/krediti/${g.slug}/">Табела: ${esc(g.short.toLowerCase())} по СВТ →</a>
@@ -558,7 +576,8 @@ rmSync(join(DIST, 'vodici'), { recursive: true, force: true });
 write('vodici/index.html', guidesHubPage());
 for (const g of GUIDES) write(`vodici/${g.slug}/index.html`, guidePage(g));
 
-// 3) sitemap.xml, llms.txt
+// 3) sitemap.xml, llms.txt, икона (од src/brand.js — ист цртеж како логото)
+write('favicon.svg', faviconSvg());
 write('sitemap.xml', sitemap());
 write('llms.txt', llms());
 rmSync(join(ROOT, 'dist-ssr'), { recursive: true, force: true });
