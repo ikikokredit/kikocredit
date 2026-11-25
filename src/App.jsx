@@ -164,11 +164,7 @@ const CustomerView = ({ onAdminClick }) => {
       <div style={styles.container}>
       {step === 1 && (
         <div style={styles.card}>
-          {/* Единствениот h1 на почетната: прашањето + еден ред што кажува што е сајтот (за посетители и за пребарувачи). */}
-          <h1 style={styles.cardTitle}>
-            Колку ти треба?{' '}
-            <span style={styles.cardLead}>Спореди кредити од {activeInstitutions.length} банки и финансиски друштва</span>
-          </h1>
+          <h2 style={styles.cardTitle}>Колку ти треба?</h2>
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>Износ на кредит (ден.)</label>
@@ -208,6 +204,9 @@ const CustomerView = ({ onAdminClick }) => {
 
       {step === 1 && (
         <section style={styles.panel} aria-label="Зошто Кико">
+          {/* Единствениот h1 на почетната (главната фраза за пребарувачите) — намерно тука, а не над
+              калкулаторот: сопственикот сака горе да има само износ и рата (25.11.2026). */}
+          <h1 style={styles.panelTitle}>Спореди кредити од {activeInstitutions.length} банки и финансиски друштва</h1>
           {TRUST.map(t => (
             <div key={t.title} style={styles.trustItem}>
               <span style={styles.trustIcon} dangerouslySetInnerHTML={{ __html: ICONS[t.icon](22) }} />
@@ -452,7 +451,6 @@ const styles = {
   // ── калкулатор ──
   card: { ...panelBase, padding: '24px 20px', boxShadow: '0 10px 30px rgba(27,26,61,0.12)' },
   cardTitle: { fontSize: '22px', fontWeight: '800', color: BRAND.ink, margin: '0 0 20px', textAlign: 'center', lineHeight: 1.25 },
-  cardLead: { display: 'block', marginTop: '6px', fontSize: '13px', fontWeight: '500', color: BRAND.muted, lineHeight: 1.4, letterSpacing: 0 },
   inputGroup: { marginBottom: '16px' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: BRAND.text, marginBottom: '8px' },
   input: {
