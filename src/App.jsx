@@ -161,26 +161,6 @@ const CustomerView = ({ onAdminClick }) => {
         </div>
       </header>
 
-      <div style={styles.hero}>
-        <div style={styles.heroInner}>
-          {step === 1 && (
-            <>
-              <h1 style={styles.heroTitle}>Спореди кредити од {activeInstitutions.length} банки и финансиски друштва</h1>
-              <p style={styles.heroSub}>Независно и бесплатно. Не сме банка и не даваме кредити.</p>
-            </>
-          )}
-          <div style={styles.progressContainer}>
-            <div style={styles.progressBar}>
-              <div style={{...styles.progressFill, width: `${(step / 2) * 100}%`}}></div>
-            </div>
-            <div style={styles.progressSteps}>
-              <span style={step >= 1 ? styles.activeStep : styles.inactiveStep}>1. Износ и рата</span>
-              <span style={step >= 2 ? styles.activeStep : styles.inactiveStep}>2. Понуди</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div style={styles.container}>
       {step === 1 && (
         <div style={styles.card}>
@@ -224,6 +204,9 @@ const CustomerView = ({ onAdminClick }) => {
 
       {step === 1 && (
         <section style={styles.panel} aria-label="Зошто Кико">
+          {/* Единствениот h1 на почетната (главната фраза за пребарувачите) — намерно тука, а не над
+              калкулаторот: сопственикот сака горе да има само износ и рата (25.11.2026). */}
+          <h1 style={styles.panelTitle}>Спореди кредити од {activeInstitutions.length} банки и финансиски друштва</h1>
           {TRUST.map(t => (
             <div key={t.title} style={styles.trustItem}>
               <span style={styles.trustIcon} dangerouslySetInnerHTML={{ __html: ICONS[t.icon](22) }} />
@@ -462,23 +445,12 @@ const styles = {
     width: '36px', height: '36px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
   },
 
-  // ── воведен дел ──
-  hero: { background: BRAND.primaryDark, paddingBottom: '52px' },
-  heroInner: { maxWidth: '480px', margin: '0 auto', padding: '14px 16px 0' },
-  heroTitle: { color: '#fff', fontSize: '24px', lineHeight: 1.25, fontWeight: '800', margin: '8px 0 8px', letterSpacing: '-0.2px' },
-  heroSub: { color: 'rgba(255,255,255,0.88)', fontSize: '15px', lineHeight: 1.45, margin: '0 0 18px' },
-  progressContainer: { margin: '8px 0 0' },
-  progressBar: { height: '4px', background: 'rgba(255,255,255,0.25)', borderRadius: '2px', overflow: 'hidden' },
-  progressFill: { height: '100%', background: BRAND.accent, transition: 'width 0.3s ease' },
-  progressSteps: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '13px' },
-  activeStep: { color: '#fff', fontWeight: '700' },
-  inactiveStep: { color: 'rgba(255,255,255,0.75)' },
-
-  container: { maxWidth: '480px', margin: '-36px auto 0', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '16px' },
+  // Без воведен дел (25.11.2026, барање на сопственикот): калкулаторот е прво нешто под лентата.
+  container: { maxWidth: '480px', margin: '16px auto 0', padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '16px' },
 
   // ── калкулатор ──
   card: { ...panelBase, padding: '24px 20px', boxShadow: '0 10px 30px rgba(27,26,61,0.12)' },
-  cardTitle: { fontSize: '22px', fontWeight: '800', color: BRAND.ink, margin: '0 0 20px', textAlign: 'center' },
+  cardTitle: { fontSize: '22px', fontWeight: '800', color: BRAND.ink, margin: '0 0 20px', textAlign: 'center', lineHeight: 1.25 },
   inputGroup: { marginBottom: '16px' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: BRAND.text, marginBottom: '8px' },
   input: {
