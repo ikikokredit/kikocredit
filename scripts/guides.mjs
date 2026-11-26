@@ -960,7 +960,119 @@ ${termRow(`Хипотекарен ${formatNumber(MORT_AMOUNT)} ден., ${MORT_R
   sources: [SRC_DSTI.nbrm, SRC_DSTI.kurir, SRC_DSTI.makfax, SRC_DSTI.lider, SRC_DSTI.nezavisen],
 };
 
-export const GUIDES = [noviPravila, altaBitola, osiguruvanjeDepoziti, brzKredit, shtoESvt, bankaIliDrustvo, najpovolen, kreditBezZhirant, kreditDoPlata, refinansiranje];
+// ── Кредит за празници и Црн петок (актуелно) ───────────────────────────────
+const HOL_AMOUNT = 30000, HOL_MONTHS = 12;
+const holCovers = (i) => (i.minAmount == null || i.minAmount <= HOL_AMOUNT) && i.maxAmount >= HOL_AMOUNT
+  && i.minMonths <= HOL_MONTHS && i.maxMonths >= HOL_MONTHS;
+const holBanks = banks.filter(holCovers), holFins = fins.filter(holCovers);
+const H = {
+  n: holBanks.length + holFins.length,
+  nb: holBanks.length,
+  nf: holFins.length,
+  bankSvt: range(holBanks, (i) => i.svt),
+  finSvt: range(holFins, (i) => i.svt),
+};
+const holRows = [
+  [`Банка, најниска СВТ (${pct(H.bankSvt[0])})`, H.bankSvt[0]],
+  [`Банка, највисока СВТ (${pct(H.bankSvt[1])})`, H.bankSvt[1]],
+  [`Друштво, најниска СВТ (${pct(H.finSvt[0])})`, H.finSvt[0]],
+  [`Друштво, највисока СВТ (${pct(H.finSvt[1])})`, H.finSvt[1]],
+];
+const holCheap = plan(HOL_AMOUNT, H.bankSvt[0], HOL_MONTHS);
+const holDear = plan(HOL_AMOUNT, H.finSvt[1], HOL_MONTHS);
+
+// Попуст наспроти цена на кредитот — илустративен пример
+const SALE_PRICE = 30000, SALE_PCT = 20;
+const salePaid = SALE_PRICE * (1 - SALE_PCT / 100), saleSaved = SALE_PRICE - salePaid;
+const saleBank = plan(salePaid, H.bankSvt[0], HOL_MONTHS), saleFin = plan(salePaid, H.finSvt[1], HOL_MONTHS);
+
+function holTable() {
+  const body = holRows.map(([label, svt]) => {
+    const p = plan(HOL_AMOUNT, svt, HOL_MONTHS);
+    return `<tr><td>${label}</td><td class="num">${formatNumber(p.payment)}</td><td class="num"><strong>${formatNumber(p.cost)}</strong></td></tr>`;
+  }).join('\n');
+  return `<div class="table-wrap"><table class="fit">
+<thead><tr><th>Понуда</th><th class="num">Рата</th><th class="num">Цена на<br>кредитот</th></tr></thead>
+<tbody>
+${body}
+</tbody></table></div>`;
+}
+
+const kreditZaPraznici = {
+  slug: 'kredit-za-praznici-crn-petok',
+  updated: '2026-11-26',
+  icon: '🎁',
+  short: 'Кредит за празници',
+  title: 'Кредит за празници: колку чини купувањето на рати | KikoCredit',
+  h1: 'Кредит за празници и Црн петок: колку чини купувањето на кредит',
+  description: `Кредит за празници од ${den(HOL_AMOUNT)} на 12 месеци чини од ${den(holCheap.cost)} до ${den(holDear.cost)}. Табела, пресметка за попустите и што да провериш.`,
+  teaser: 'Колку чинат 30.000 денари на 12 месеци, дали попустот се исплати ако купуваш на кредит и што значи „без камата“.',
+  lead: `Кредит за празници од ${den(HOL_AMOUNT)} на 12 месеци чини од околу ${den(holCheap.cost)} кај банка до околу ${den(holDear.cost)} кај финансиско друштво со највисока СВТ. Ако купуваш на попуст со кредит, цената на кредитот може да го изеде целиот попуст. Еве пресметка со условите на ${H.n} даватели и што да провериш пред да купиш на рати.`,
+  body: `<p class="small"><strong>Состојба на 26.11.2026.</strong> Бројките за давателите се од условите објавени на нивните сајтови (последна проверка: ${fmtDate(DATA_UPDATED)}); законските правила се од Законот за заштита на потрошувачите при договори за потрошувачки кредити. Изворите се на дното.</p>
+
+<p>Црн петок во 2026 е на 27 ноември, а потоа доаѓаат новогодишните купувања. Ако размислуваш да купиш на рати или со кредит, кредитот не е проблем сам по себе, но има цена, и таа цена треба да ја знаеш пред да купиш.</p>
+
+<h2>Накратко</h2>
+<ul>
+<li>За ${den(HOL_AMOUNT)} на 12 месеци, кредитот чини од околу <strong>${den(holCheap.cost)}</strong> до околу <strong>${den(holDear.cost)}</strong>, зависно од СВТ.</li>
+<li>Скап кредит може да чини повеќе од попуст од ${SALE_PCT}${NB}%.</li>
+<li>„Без камата“ не значи секогаш без трошоци. Побарај ја <strong>СВТ и вкупниот износ за враќање</strong>.</li>
+<li>Од договор за потрошувачки кредит можеш да се откажеш во рок од <strong>14 дена</strong> без причина.</li>
+</ul>
+
+<h2>Колку чини кредит за празници?</h2>
+<p>Од давателите што ги споредуваме, ${H.n} нудат ${den(HOL_AMOUNT)} на ${HOL_MONTHS} месеци: ${H.nb} банки и штедилници со СВТ ${pctRange(H.bankSvt)} и ${H.nf} финансиски друштва со СВТ ${pctRange(H.finSvt)}. Пример за <strong>${formatNumber(HOL_AMOUNT)}${NB}ден. на ${HOL_MONTHS} месеци</strong> (износите се во денари):</p>
+${holTable()}
+<p>Разликата меѓу најевтината и најскапата понуда за истиот износ е околу ${den(holDear.cost - holCheap.cost)}. Ратата и цената за својот износ ги пресметуваш во <a href="/">калкулаторот</a>, а сите даватели по СВТ се на <a href="/krediti/">споредбата на кредити</a>.</p>
+<p class="small">${approxNote} ${dataNote}</p>
+
+<h2>Дали попустот се исплати ако купуваш на кредит?</h2>
+<p>Пример со илустративни бројки. Производ што чини ${formatNumber(SALE_PRICE)}${NB}ден. е на попуст од ${SALE_PCT}${NB}%, па плаќаш ${formatNumber(salePaid)}${NB}ден. Заштедата е ${den(saleSaved)}. Ако ги земеш ${formatNumber(salePaid)}${NB}ден. на кредит на ${HOL_MONTHS} месеци:</p>
+<div class="table-wrap"><table class="fit">
+<thead><tr><th>Кредит</th><th class="num">Цена на<br>кредитот</th><th class="num">Попуст минус<br>кредит</th></tr></thead>
+<tbody>
+<tr><td>СВТ ${pct(H.bankSvt[0])}</td><td class="num">${formatNumber(saleBank.cost)}</td><td class="num"><strong>${saleSaved - saleBank.cost >= 0 ? '+' : '−'}${formatNumber(Math.abs(saleSaved - saleBank.cost))}</strong></td></tr>
+<tr><td>СВТ ${pct(H.finSvt[1])}</td><td class="num">${formatNumber(saleFin.cost)}</td><td class="num"><strong>${saleSaved - saleFin.cost >= 0 ? '+' : '−'}${formatNumber(Math.abs(saleSaved - saleFin.cost))}</strong></td></tr>
+</tbody></table></div>
+<p>Со евтин кредит, од попустот ти остануваат околу ${den(saleSaved - saleBank.cost)}. Со кредит со СВТ од ${pct(H.finSvt[1])}, ${saleFin.cost > saleSaved ? `кредитот чини повеќе од попустот, па на крајот плаќаш околу ${den(saleFin.cost - saleSaved)} повеќе отколку да купиш по полна цена во готово` : `од попустот ти остануваат само околу ${den(saleSaved - saleFin.cost)}`}.</p>
+<p class="small">${approxNote}</p>
+
+<h2>Купување на рати „без камата“: што да провериш</h2>
+<p>„Без камата“ или „0 % камата“ кажува само за каматата. Кредитот може да има и други трошоци: надоместок за обработка, за администрирање, за осигурување. Затоа е важна <strong>СВТ</strong>: таа ги вклучува и каматата и трошоците (повеќе: <a href="/vodici/shto-e-svt/">што е СВТ</a>).</p>
+<ol>
+<li>Побарај ги <strong>СВТ и вкупниот износ за враќање</strong>. Ако вкупно враќаш точно колку што е цената, кредитот навистина нема трошок.</li>
+<li>Секоја реклама за кредит што споменува камата или трошоци мора да ја наведе СВТ, со репрезентативен пример (член 4).</li>
+<li>Пред да потпишеш, мора да добиеш <strong>преддоговорни информации на стандарден формулар</strong>, со СВТ и вкупниот износ (член 5).</li>
+<li>Провери дали цената на рати е иста како цената во готово. Ако е повисока, разликата е цената на кредитот.</li>
+</ol>
+
+<h2>Брз кредит за празници: колку смее да чини</h2>
+<p>Финансиските друштва нудат брз кредит, често онлајн, но со многукратно повисока СВТ од банките. СВТ смее да биде ${capLine}. Повеќе за брзите кредити: <a href="/vodici/brz-kredit/">Брз кредит: колку чини и на што да внимаваш</a>.</p>
+
+<h2>Ако се премислиш после празниците</h2>
+<ul>
+<li><strong>Откажување во 14 дена.</strong> Од договорот за потрошувачки кредит можеш да се откажеш без да наведеш причина; ги враќаш парите и каматата за деновите кога ги користеше (член 14).</li>
+<li><strong>Предвремена отплата.</strong> Кредитот можеш да го вратиш порано во секое време, а каматата и трошоците за преостанатиот период се намалуваат. Надоместокот е најмногу 1 % од вратениот износ (0,5 % ако до крајот останува помалку од една година) и само кај фиксна камата (член 16).</li>
+</ul>
+
+<h2>Провери пред да купиш на кредит</h2>
+<ol>
+<li>Направи список и буџет за празниците пред да влезеш во продавница или на сајт.</li>
+<li>Пресметај ја ратата и вкупниот трошок во <a href="/">калкулаторот</a> и спореди ги понудите на <a href="/krediti/">споредбата на кредити</a>.</li>
+<li>Ако имаш редовни примања, провери и <a href="/krediti/banki/">банките</a>: СВТ таму е многукратно пониска.</li>
+<li>Земи само толку колку што можеш редовно да враќаш и во јануари и февруари, кога празниците ќе поминат.</li>
+</ol>`,
+  faq: [
+    ['Колку чини кредит за празници?', `За ${den(HOL_AMOUNT)} на ${HOL_MONTHS} месеци, од околу ${den(holCheap.cost)} (банка со најниска СВТ, ${pct(H.bankSvt[0])}) до околу ${den(holDear.cost)} (финансиско друштво со ${pct(H.finSvt[1])}), според условите на давателите што ги споредуваме.`],
+    ['Дали купување на рати „без камата“ е бесплатно?', 'Не секогаш. Може да има надоместоци за обработка, администрирање или осигурување. Побарај ги СВТ и вкупниот износ за враќање: ако враќаш точно колку што е цената, нема трошок.'],
+    ['Дали се исплати да купам на попуст за Црн петок со кредит?', `Зависи од цената на кредитот. Во нашиот пример, кредитот со висока СВТ го изедува целиот попуст од ${den(saleSaved)}, а со кредит од банка поголемиот дел од попустот останува.`],
+    ['Можам ли да се откажам од кредитот?', 'Да, во рок од 14 дена од договорот за потрошувачки кредит, без да наведеш причина. Ги враќаш парите и каматата за деновите кога ги користеше (член 14).'],
+    ['Дали KikoCredit дава кредити за празници?', 'Не. KikoCredit е бесплатна споредба: ги покажува условите на банките и друштвата, а со „Аплицирај“ одиш директно кај давателот.'],
+  ],
+  sources: [SRC.zzpdpk, SRC.nbrmPenalty],
+};
+
+export const GUIDES = [kreditZaPraznici, noviPravila,altaBitola, osiguruvanjeDepoziti, brzKredit, shtoESvt, bankaIliDrustvo, najpovolen, kreditBezZhirant, kreditDoPlata, refinansiranje];
 export const guidePath = (g) => `/vodici/${g.slug}/`;
 
 // За тестови и проверка при build
