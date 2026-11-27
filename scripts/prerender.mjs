@@ -322,7 +322,8 @@ ${guidesNav(g.slug)}
     headline: g.h1,
     description: g.description,
     inLanguage: 'mk',
-    datePublished: guideDate(g),
+    // `published` го има само водич што подоцна е преработен: првата објава останува точна
+    datePublished: g.published || guideDate(g),
     dateModified: guideDate(g),
     mainEntityOfPage: SITE + path,
     image: `${SITE}/og-image.png`,
