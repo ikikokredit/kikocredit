@@ -361,6 +361,12 @@ ${ctaCalc}
 }
 
 // ── страница за еден давател ───────────────────────────────────────────────
+// Проба од 27.11.2026: двете страници со најмногу прикажувања на Google и најмалку кликови
+// (28 дена до 25.11: easy-finance 350 прикажувања / 2 клика, solidus 194 / 2, позиција 8,5)
+// добиваат наслов со прашање и опис со датумот на проверка. Другите страници остануваат
+// како споредба. Ако CTR порасне → примени на сите; ако не → избриши ги од листата.
+const TITLE_TEST_SLUGS = new Set(['easy-finance', 'solidus']);
+
 function lenderPage(i) {
   const g = groupOf(i);
   const path = lenderPath(i);
@@ -375,11 +381,19 @@ function lenderPage(i) {
   // Привремено паузиран давател (`paused` + `notice`): наслов и опис по известувањето,
   // известување на врвот и без копче кон давателот.
   const paused = i.paused && i.notice;
+  const test = TITLE_TEST_SLUGS.has(i.slug);
+  const svtShort = i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`;
   const title = paused
     ? `${i.notice.title} | KikoCredit`
-    : `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
+    : test
+      ? `${i.name}: колку чини кредитот? ${i.svtVerified ? `СВТ ${formatPct(i.svt)}, до ${formatNumber(i.maxAmount)} ден.` : `До ${formatNumber(i.maxAmount)} ден., рок до ${i.maxMonths} мес.`} | KikoCredit`
+      : `${i.name}: кредит до ${formatNumber(i.maxAmount)} ден., ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : `до ${i.maxMonths} мес.`} | KikoCredit`;
   const nameSite = i.name.includes('(') ? `${i.name}, ${i.website}` : `${i.name} (${i.website})`;
-  const description = paused ? i.notice.description : `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${i.svtVerified ? `СВТ ${formatPct(i.svt)}` : isBankish(i) ? `камата ${formatPct(i.svt)} (СВТ не е објавена)` : `СВТ околу ${formatPct(i.svt)}`}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
+  const description = paused
+    ? i.notice.description
+    : test
+      ? `Колку чини кредит од ${nameSite}? ${svtShort}, ${i.minAmount != null ? `од ${formatNumber(i.minAmount)} ` : ''}до ${formatNumber(i.maxAmount)} ден., ${i.minMonths}–${i.maxMonths} мес. Проверено ${fmtDate(i.verifiedAt)}. Спореди со уште ${activeInstitutions.length - 1} даватели, бесплатно.`
+      : `${nameSite}: кредит ${amountText(i)}, рок ${monthsText(i)}, ${svtShort}. Спореди ја ратата со уште ${activeInstitutions.length - 1} даватели, бесплатно.`;
   const noticeHtml = paused ? `<div class="example" role="note">
 <p style="margin:0"><strong>Состојба на ${fmtDate(i.notice.date)}.</strong> ${esc(i.notice.text)}</p>
 <a href="${esc(i.notice.guide)}"><strong>Што значи ова за клиентите →</strong></a>
